@@ -39,6 +39,7 @@ const (
 	Percent   TokenType = "%"
 
 	// Single or two character tokens.
+	TildSlash TokenType = "~/"
 	Bang      TokenType = "!"
 	BangEq    TokenType = "!="
 	Equal     TokenType = "="

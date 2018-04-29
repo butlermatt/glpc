@@ -73,6 +73,12 @@ func (l *Lexer) scanToken() {
 		l.addTokenType(Percent)
 	case '*':
 		l.addTokenType(Star)
+	case '~':
+		if l.match('/') {
+			l.addTokenType(TildSlash)
+		} else {
+			l.addTokenType(Illegal)
+		}
 	case '/':
 		if l.match('/') {
 			// Consume comments to end of line (or file)
