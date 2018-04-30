@@ -20,7 +20,7 @@ type NumberExpr struct {
 }
 
 // Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
-func (n *NumberExpr) Accept(visitor ExprVisitor) (interface{}, error) {
+func (n *NumberExpr) Accept(visitor ExprVisitor) (Object, error) {
 	return visitor.VisitNumberExpr(n)
 }
 
@@ -29,6 +29,15 @@ type ExprVisitor interface {
 	VisitNumberExpr(expr *NumberExpr) (Object, error)
 }
 
+// ExpressionStmt is a Stmt of a Expression
+type ExpressionStmt struct {
+	Expression Expr
+}
+
+// Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
+func (e *ExpressionStmt) Accept(visitor StmtVisitor) error { return visitor.VisitExpressionStmt(e) }
+
 // StmtVisitor will visit Stmt objects and must receive calls to their applicable methods.
 type StmtVisitor interface {
+	VisitExpressionStmt(stmt *ExpressionStmt) error
 }

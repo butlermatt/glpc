@@ -18,7 +18,9 @@ func main() {
 		"Number": "Token *lexer.Token, Float float64, Int int",
 	}
 
-	statements := map[string]string{}
+	statements := map[string]string{
+		"Expression": "Expression Expr",
+	}
 
 	err := defineAst(outDir, expressions, statements)
 	if err != nil {
@@ -102,7 +104,7 @@ func defineType(file *os.File, nodeType, name, definition string) error {
 	ptr := strings.ToLower(name[0:1])
 	checkWrite(file, "// Accept calls the correct visit method on %sVisitor, passing a reference to itself as a value", nodeType)
 	if nodeType == "Expr" {
-		return checkWrite(file, "func (%s *%s) Accept(visitor %sVisitor) (interface{}, error) { return visitor.Visit%[2]s(%[1]s) }\n", ptr, name+nodeType, nodeType)
+		return checkWrite(file, "func (%s *%s) Accept(visitor %sVisitor) (Object, error) { return visitor.Visit%[2]s(%[1]s) }\n", ptr, name+nodeType, nodeType)
 	}
 
 	return checkWrite(file, "func (%s *%s) Accept(visitor %sVisitor) error { return visitor.Visit%[2]s(%[1]s) }\n", ptr, name+nodeType, nodeType)
