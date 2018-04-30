@@ -156,6 +156,20 @@ func (p *Parser) primary() object.Expr {
 		return &object.NumberExpr{Token: p.prevTok, Int: int(n)}
 	case p.match(lexer.String, lexer.RawString):
 		return &object.StringExpr{Token: p.prevTok, Value: p.prevTok.Lexeme}
+	case p.match(lexer.LBracket):
+		var vals []object.Expr
+
+		if !p.check(lexer.RBracket) {
+			vals = append(vals, p.expression())
+			for p.match(lexer.Comma) {
+				vals = append(vals, p.expression())
+			}
+		}
+
+		if !p.consume(lexer.RBracket, "expect ']' after list values.") {
+			return nil
+		}
+		return &object.ListExpr{Values: vals}
 	}
 
 	p.addError(p.curTok, "Expect expression.")

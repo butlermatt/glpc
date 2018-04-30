@@ -21,6 +21,14 @@ type BooleanExpr struct {
 // Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
 func (b *BooleanExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitBooleanExpr(b) }
 
+// ListExpr is a Expr of a List
+type ListExpr struct {
+	Values []Expr
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (l *ListExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitListExpr(l) }
+
 // NumberExpr is a Expr of a Number
 type NumberExpr struct {
 	Token *lexer.Token
@@ -52,6 +60,7 @@ func (s *StringExpr) Accept(visitor ExprVisitor) (Object, error) { return visito
 // ExprVisitor will visit Expr objects and must receive calls to their applicable methods.
 type ExprVisitor interface {
 	VisitBooleanExpr(expr *BooleanExpr) (Object, error)
+	VisitListExpr(expr *ListExpr) (Object, error)
 	VisitNumberExpr(expr *NumberExpr) (Object, error)
 	VisitNullExpr(expr *NullExpr) (Object, error)
 	VisitStringExpr(expr *StringExpr) (Object, error)
