@@ -156,6 +156,9 @@ func (p *Parser) primary() object.Expr {
 		return &object.NumberExpr{Token: p.prevTok, Int: int(n)}
 	case p.match(lexer.String, lexer.RawString):
 		return &object.StringExpr{Token: p.prevTok, Value: p.prevTok.Lexeme}
+	case p.match(lexer.UTString):
+		p.addError(p.prevTok, "unterminated string")
+		return nil
 	case p.match(lexer.LBracket):
 		var vals []object.Expr
 

@@ -159,6 +159,37 @@ func TestStringLiteralExpression(t *testing.T) {
 	}
 }
 
+func TestUnterminatedString(t *testing.T) {
+	input := `"hello world;`
+
+	l := lexer.New([]byte(input), "testfile.gpc")
+	p := New(l)
+	stmts := p.Parse()
+
+	if len(stmts) != 0 {
+		t.Fatalf("wrong number of statements. expected=0, got=%d", len(stmts))
+	}
+
+	errs := p.Errors()
+	// 2 because of Unterminated string, then missing semicolon
+	if len(errs) != 2 {
+		t.Fatalf("wrong number of errors. expected=1, got=%d", len(errs))
+	}
+
+	e := errs[0]
+	if e.Line != 1 {
+		t.Errorf("error on wrong line, expected=1, got=%d", e.Line)
+	}
+
+	if e.Where != `"hello world;` {
+		t.Errorf("error at wrong location. expected=%q, got=%q", `"hello world;`, e.Where)
+	}
+
+	if e.Msg != "unterminated string" {
+		t.Errorf("wrong error message. expected=%q, got=%q", "unterminated string", e.Msg)
+	}
+}
+
 func testBooleanLiteral(t *testing.T, expr object.Expr, value bool) bool {
 	be, ok := expr.(*object.BooleanExpr)
 	if !ok {
