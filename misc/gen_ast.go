@@ -17,6 +17,7 @@ func main() {
 	expressions := map[string]string{
 		"Boolean": "Token *lexer.Token, Value bool",
 		"Number":  "Token *lexer.Token, Float float64, Int int",
+		"Null":    "Token *lexer.Token, Value interface{}",
 	}
 
 	statements := map[string]string{

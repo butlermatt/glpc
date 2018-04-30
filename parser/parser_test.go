@@ -1,9 +1,10 @@
 package parser
 
 import (
+	"testing"
+
 	"github.com/butlermatt/glpc/lexer"
 	"github.com/butlermatt/glpc/object"
-	"testing"
 )
 
 func TestBooleanLiteralExpression(t *testing.T) {
@@ -66,6 +67,35 @@ func TestNumberLiteralExpression(t *testing.T) {
 		if !testNumberLiteral(t, s.Expression, tt.value) {
 			t.Errorf("last test tha failed was %d", i)
 		}
+	}
+}
+
+func TestNullLiteralExpression(t *testing.T) {
+	var value interface{}
+	input := "null;"
+
+	l := lexer.New([]byte(input), "testfile.gpc")
+	p := New(l)
+
+	stmts := p.Parse()
+	checkParseErrors(t, p)
+
+	if len(stmts) != 1 {
+		t.Fatalf("incorrect number of statements. exepected=%d, got=%d", 1, len(stmts))
+	}
+
+	s, ok := stmts[0].(*object.ExpressionStmt)
+	if !ok {
+		t.Fatalf("statement[0] wrong type. expected=*object.ExpressionStmt, got=%T", stmts[0])
+	}
+
+	ne, ok := s.Expression.(*object.NullExpr)
+	if !ok {
+		t.Fatalf("expression wrong type. expected=*object.NullExpression, got=%T", s.Expression)
+	}
+
+	if ne.Value != value {
+		t.Fatalf("null value incorrect. expected=%v, got=%v", value, ne.Value)
 	}
 }
 
