@@ -154,6 +154,8 @@ func (p *Parser) primary() object.Expr {
 			return nil
 		}
 		return &object.NumberExpr{Token: p.prevTok, Int: int(n)}
+	case p.match(lexer.String, lexer.RawString):
+		return &object.StringExpr{Token: p.prevTok, Value: p.prevTok.Lexeme}
 	}
 
 	p.addError(p.curTok, "Expect expression.")

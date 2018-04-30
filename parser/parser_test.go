@@ -99,6 +99,38 @@ func TestNullLiteralExpression(t *testing.T) {
 	}
 }
 
+func TestStringLiteralExpression(t *testing.T) {
+	tests := []struct{
+		input string
+		expected string
+	}{
+		{`"hello world";`, "hello world"},
+		{`'hello world';`, "hello world"},
+		{"`hello world`;", "hello world"},
+	}
+
+	for i, tt := range tests {
+		l := lexer.New([]byte(tt.input), "testfile.gpc")
+		p := New(l)
+		stmts := p.Parse()
+		checkParseErrors(t, p)
+
+		if len(stmts) != 1 {
+			t.Fatalf("test %d: incorrect number of statements. expected=%d, got=%d", i, 1, len(stmts))
+		}
+
+		stmt := stmts[0].(*object.ExpressionStmt)
+		lit, ok := stmt.Expression.(*object.StringExpr)
+		if !ok {
+			t.Fatalf("test %d: expression wrong type. expeted=*object.StringExpr, got=%T", i, stmt.Expression)
+		}
+
+		if lit.Value != tt.expected {
+			t.Errorf("test %d: value is wrong. expected=%q, got==%q", i, tt.expected, lit.Value)
+		}
+	}
+}
+
 func testBooleanLiteral(t *testing.T, expr object.Expr, value bool) bool {
 	be, ok := expr.(*object.BooleanExpr)
 	if !ok {
