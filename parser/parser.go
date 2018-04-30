@@ -131,6 +131,19 @@ func (p *Parser) expressionStatement() object.Stmt {
 }
 
 func (p *Parser) expression() object.Expr {
+	return p.unary()
+}
+
+func (p *Parser) unary() object.Expr {
+	if p.match(lexer.Bang, lexer.Minus) {
+		oper := p.prevTok
+		right := p.unary()
+		if right == nil {
+			return nil
+		}
+		return &object.UnaryExpr{Operator: oper, Right: right}
+	}
+
 	return p.primary()
 }
 

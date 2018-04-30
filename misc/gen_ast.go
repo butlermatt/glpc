@@ -20,6 +20,7 @@ func main() {
 		"Number":  "Token *lexer.Token, Float float64, Int int",
 		"Null":    "Token *lexer.Token, Value interface{}",
 		"String":  "Token *lexer.Token, Value string",
+		"Unary":   "Operator *lexer.Token, Right Expr",
 	}
 
 	statements := map[string]string{

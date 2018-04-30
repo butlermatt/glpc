@@ -159,6 +159,117 @@ func TestStringLiteralExpression(t *testing.T) {
 	}
 }
 
+func TestUnaryExpression(t *testing.T) {
+	input := `!true;
+!1;
+!!true;
+-10;
+-2.25;`
+
+	l := lexer.New([]byte(input), "testfile.gpc")
+	p := New(l)
+	stmts := p.Parse()
+	checkParseErrors(t, p)
+
+	if len(stmts) != 5 {
+		t.Fatalf("stmts is wrong length. expected=5, got=%d", len(stmts))
+	}
+
+	s := stmts[0].(*object.ExpressionStmt)
+	ue, ok := s.Expression.(*object.UnaryExpr)
+	if !ok {
+		t.Fatalf("expression wrong type. expected=*object.UnaryExpr, got=%T", s.Expression)
+	}
+
+	if ue.Operator.Type != lexer.Bang {
+		t.Errorf("wrong operator, expected=%s, got=%s", lexer.Bang, ue.Operator.Type)
+	}
+	be, ok := ue.Right.(*object.BooleanExpr)
+	if !ok {
+		t.Fatalf("Right value wrong type. expected=*object.BooleanExpr, got=%T", ue.Right)
+	}
+	if be.Value != true {
+		t.Errorf("Right value incorrect type. expected=%t, got=%t", true, be.Value)
+	}
+
+	s = stmts[1].(*object.ExpressionStmt)
+	ue, ok = s.Expression.(*object.UnaryExpr)
+	if !ok {
+		t.Fatalf("expression wrong type. expected=*object.UnaryExpr, got=%T", s.Expression)
+	}
+
+	if ue.Operator.Type != lexer.Bang {
+		t.Errorf("wrong operator, expected=%s, got=%s", lexer.Bang, ue.Operator.Type)
+	}
+	ne, ok := ue.Right.(*object.NumberExpr)
+	if !ok {
+		t.Fatalf("Right value wrong type. expected=*object.BooleanExpr, got=%T", ue.Right)
+	}
+	if ne.Int != 1 {
+		t.Errorf("Right value incorrect type. expected=%t, got=%t", true, ne.Int)
+	}
+
+	s = stmts[2].(*object.ExpressionStmt)
+	ue, ok = s.Expression.(*object.UnaryExpr)
+	if !ok {
+		t.Fatalf("expression wrong type. expected=*object.UnaryExpr, got=%T", s.Expression)
+	}
+
+	if ue.Operator.Type != lexer.Bang {
+		t.Errorf("wrong operator, expected=%s, got=%s", lexer.Bang, ue.Operator.Type)
+	}
+	ue2, ok := ue.Right.(*object.UnaryExpr)
+	if !ok {
+		t.Fatalf("Right value incorrect type. expected=*object.UnaryExpr, got=%T. %[1]v", ue.Right)
+	}
+	if ue2.Operator.Type != lexer.Bang {
+		t.Errorf("wrong operator, expected=%s, got=%s", lexer.Bang, ue2.Operator.Type)
+	}
+
+	be, ok = ue2.Right.(*object.BooleanExpr)
+	if !ok {
+		t.Fatalf("Right value wrong type. expected=*object.BooleanExpr, got=%T", ue2.Right)
+	}
+	if be.Value != true {
+		t.Errorf("Right value incorrect type. expected=%t, got=%t", true, be.Value)
+	}
+
+	s = stmts[3].(*object.ExpressionStmt)
+	ue, ok = s.Expression.(*object.UnaryExpr)
+	if !ok {
+		t.Fatalf("expression wrong type. expected=*object.UnaryExpr, got=%T", s.Expression)
+	}
+
+	if ue.Operator.Type != lexer.Minus {
+		t.Errorf("wrong operator, expected=%s, got=%s", lexer.Minus, ue.Operator.Type)
+	}
+	ne, ok = ue.Right.(*object.NumberExpr)
+	if !ok {
+		t.Fatalf("Right value wrong type. expected=*object.BooleanExpr, got=%T", ue.Right)
+	}
+	if ne.Int != 10 {
+		t.Errorf("Right value incorrect type. expected=%t, got=%t", true, ne.Int)
+	}
+
+	s = stmts[4].(*object.ExpressionStmt)
+	ue, ok = s.Expression.(*object.UnaryExpr)
+	if !ok {
+		t.Fatalf("expression wrong type. expected=*object.UnaryExpr, got=%T", s.Expression)
+	}
+
+	if ue.Operator.Type != lexer.Minus {
+		t.Errorf("wrong operator, expected=%s, got=%s", lexer.Minus, ue.Operator.Type)
+	}
+	ne, ok = ue.Right.(*object.NumberExpr)
+	if !ok {
+		t.Fatalf("Right value wrong type. expected=*object.BooleanExpr, got=%T", ue.Right)
+	}
+	if ne.Float != 2.25 {
+		t.Errorf("Right value incorrect type. expected=%v, got=%v", 2.25, ne.Float)
+	}
+
+}
+
 func TestUnterminatedString(t *testing.T) {
 	input := `"hello world;`
 

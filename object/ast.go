@@ -12,6 +12,33 @@ type Stmt interface {
 	Accept(StmtVisitor) error
 }
 
+// NullExpr is a Expr of a Null
+type NullExpr struct {
+	Token *lexer.Token
+	Value interface{}
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (n *NullExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitNullExpr(n) }
+
+// StringExpr is a Expr of a String
+type StringExpr struct {
+	Token *lexer.Token
+	Value string
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (s *StringExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitStringExpr(s) }
+
+// UnaryExpr is a Expr of a Unary
+type UnaryExpr struct {
+	Operator *lexer.Token
+	Right    Expr
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (u *UnaryExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitUnaryExpr(u) }
+
 // BooleanExpr is a Expr of a Boolean
 type BooleanExpr struct {
 	Token *lexer.Token
@@ -39,24 +66,6 @@ type NumberExpr struct {
 // Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
 func (n *NumberExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitNumberExpr(n) }
 
-// NullExpr is a Expr of a Null
-type NullExpr struct {
-	Token *lexer.Token
-	Value interface{}
-}
-
-// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
-func (n *NullExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitNullExpr(n) }
-
-// StringExpr is a Expr of a String
-type StringExpr struct {
-	Token *lexer.Token
-	Value string
-}
-
-// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
-func (s *StringExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitStringExpr(s) }
-
 // ExprVisitor will visit Expr objects and must receive calls to their applicable methods.
 type ExprVisitor interface {
 	VisitBooleanExpr(expr *BooleanExpr) (Object, error)
@@ -64,6 +73,7 @@ type ExprVisitor interface {
 	VisitNumberExpr(expr *NumberExpr) (Object, error)
 	VisitNullExpr(expr *NullExpr) (Object, error)
 	VisitStringExpr(expr *StringExpr) (Object, error)
+	VisitUnaryExpr(expr *UnaryExpr) (Object, error)
 }
 
 // ExpressionStmt is a Stmt of a Expression
