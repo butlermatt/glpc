@@ -12,6 +12,15 @@ type Stmt interface {
 	Accept(StmtVisitor) error
 }
 
+// BooleanExpr is a Expr of a Boolean
+type BooleanExpr struct {
+	Token *lexer.Token
+	Value bool
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (b *BooleanExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitBooleanExpr(b) }
+
 // NumberExpr is a Expr of a Number
 type NumberExpr struct {
 	Token *lexer.Token
@@ -20,12 +29,11 @@ type NumberExpr struct {
 }
 
 // Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
-func (n *NumberExpr) Accept(visitor ExprVisitor) (Object, error) {
-	return visitor.VisitNumberExpr(n)
-}
+func (n *NumberExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitNumberExpr(n) }
 
 // ExprVisitor will visit Expr objects and must receive calls to their applicable methods.
 type ExprVisitor interface {
+	VisitBooleanExpr(expr *BooleanExpr) (Object, error)
 	VisitNumberExpr(expr *NumberExpr) (Object, error)
 }
 

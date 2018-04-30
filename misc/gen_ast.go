@@ -15,7 +15,8 @@ func main() {
 	outDir := os.Args[1]
 
 	expressions := map[string]string{
-		"Number": "Token *lexer.Token, Float float64, Int int",
+		"Boolean": "Token *lexer.Token, Value bool",
+		"Number":  "Token *lexer.Token, Float float64, Int int",
 	}
 
 	statements := map[string]string{

@@ -6,6 +6,37 @@ import (
 	"testing"
 )
 
+func TestBooleanLiteralExpression(t *testing.T) {
+	tests := []struct {
+		input string
+		value bool
+	}{
+		{"true;", true},
+		{"false;", false},
+	}
+
+	for i, tt := range tests {
+		l := lexer.New([]byte(tt.input), "testfile.gpc")
+		p := New(l)
+
+		stmts := p.Parse()
+		checkParseErrors(t, p)
+
+		if len(stmts) != 1 {
+			t.Fatalf("test %d: incorrect number of statements. expected=%d, got=%d", i, 1, len(stmts))
+		}
+
+		s, ok := stmts[0].(*object.ExpressionStmt)
+		if !ok {
+			t.Fatalf("test %d: statement wrong type. expected=*object.ExpressionStmt, got=%T", i, stmts[0])
+		}
+
+		if !testBooleanLiteral(t, s.Expression, tt.value) {
+			t.Errorf("last error occurred on test %d", i)
+		}
+	}
+}
+
 func TestNumberLiteralExpression(t *testing.T) {
 	tests := []struct {
 		input string
@@ -36,6 +67,21 @@ func TestNumberLiteralExpression(t *testing.T) {
 			t.Errorf("last test tha failed was %d", i)
 		}
 	}
+}
+
+func testBooleanLiteral(t *testing.T, expr object.Expr, value bool) bool {
+	be, ok := expr.(*object.BooleanExpr)
+	if !ok {
+		t.Errorf("expr not correct type. expected=*object.BooleanExpr, got=%T", expr)
+		return false
+	}
+
+	if be.Value != value {
+		t.Errorf("value did not match. expected=%t, got=%t", value, be.Value)
+		return false
+	}
+
+	return true
 }
 
 func testNumberLiteral(t *testing.T, expr object.Expr, value interface{}) bool {

@@ -136,6 +136,8 @@ func (p *Parser) expression() object.Expr {
 
 func (p *Parser) primary() object.Expr {
 	switch {
+	case p.match(lexer.False, lexer.True):
+		return &object.BooleanExpr{Token: p.prevTok, Value: p.prevTok.Type == lexer.True}
 	case p.match(lexer.NumberF):
 		n, err := strconv.ParseFloat(p.prevTok.Lexeme, 64)
 		if err != nil {
