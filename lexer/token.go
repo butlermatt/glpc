@@ -50,11 +50,12 @@ const (
 	LessEq    TokenType = "<="
 
 	// Literals
-	Ident    TokenType = "IDENT"
-	String   TokenType = "STRING"
-	UTString TokenType = "UNTERMINATED STRING"
-	NumberF  TokenType = "FLOAT NUMBER"
-	NumberI  TokenType = "INT NUMBER"
+	Ident     TokenType = "IDENT"
+	String    TokenType = "STRING"
+	RawString TokenType = "RAW STRING"
+	UTString  TokenType = "UNTERMINATED STRING"
+	NumberF   TokenType = "FLOAT NUMBER"
+	NumberI   TokenType = "INT NUMBER"
 
 	// Keywords
 	And      TokenType = "AND"

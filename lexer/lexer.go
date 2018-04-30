@@ -225,7 +225,7 @@ func (l *Lexer) multilineString() {
 	}
 
 	l.readChar()
-	l.addToken(NewToken(String, string(l.input[l.start+1:l.current-1]), l.file, line))
+	l.addToken(NewToken(RawString, string(l.input[l.start+1:l.current-1]), l.file, line))
 }
 
 func (l *Lexer) isAtEnd() bool {

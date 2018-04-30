@@ -73,7 +73,7 @@ break continue
 		{GreaterEq, ">=", 5},
 		{String, `a string`, 6},
 		{String, `another "string"`, 6},
-		{String, "A\nMultiline\nString", 7},
+		{RawString, "A\nMultiline\nString", 7},
 		{Bang, "!", 10},
 		{Comma, ",", 11},
 		{Dot, ".", 12},
