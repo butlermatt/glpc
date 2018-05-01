@@ -38,6 +38,29 @@ func TestBooleanLiteralExpression(t *testing.T) {
 	}
 }
 
+func TestGroupingExpression(t *testing.T) {
+	input := "(5);"
+
+	l := lexer.New([]byte(input), "testfile.gpc")
+	p := New(l)
+	stmts := p.Parse()
+	checkParseErrors(t, p)
+
+	if len(stmts) != 1 {
+		t.Fatalf("statements incorrect length. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	stmt := stmts[0].(*object.ExpressionStmt)
+
+	gr, ok := stmt.Expression.(*object.GroupingExpr)
+	if !ok {
+		t.Fatalf("expression wrong type. expected=*object.GroupingExpr, got=%T", stmt.Expression)
+	}
+
+	testNumberLiteral(t, gr.Expression, 5)
+
+}
+
 func TestListExpression(t *testing.T) {
 		input := "[0, 'one', true];"
 
@@ -47,7 +70,7 @@ func TestListExpression(t *testing.T) {
 		checkParseErrors(t, p)
 
 		if len(stmts) != 1 {
-			t.Fatalf("test %d: statements is incorrect length. expected=%d, got=%d", 1, len(stmts))
+			t.Fatalf("statements is incorrect length. expected=%d, got=%d", 1, len(stmts))
 		}
 
 		stmt := stmts[0].(*object.ExpressionStmt)

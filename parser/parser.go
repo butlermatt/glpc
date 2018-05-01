@@ -186,6 +186,14 @@ func (p *Parser) primary() object.Expr {
 			return nil
 		}
 		return &object.ListExpr{Values: vals}
+	case p.match(lexer.LParen):
+		exp := p.expression()
+		if exp == nil {
+			return nil
+		}
+		if p.consume(lexer.RParen, "expect ')' after expression.") {
+			return &object.GroupingExpr{Expression: exp}
+		}
 	}
 
 	p.addError(p.curTok, "Expect expression.")
