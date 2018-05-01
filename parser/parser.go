@@ -153,20 +153,8 @@ func (p *Parser) primary() object.Expr {
 		return &object.BooleanExpr{Token: p.prevTok, Value: p.prevTok.Type == lexer.True}
 	case p.match(lexer.Null):
 		return &object.NullExpr{Token: p.prevTok, Value: nil}
-	case p.match(lexer.NumberF):
-		n, err := strconv.ParseFloat(p.prevTok.Lexeme, 64)
-		if err != nil {
-			p.addError(p.prevTok, "Unable to parse value: "+p.prevTok.Lexeme+".")
-			return nil
-		}
-		return &object.NumberExpr{Token: p.prevTok, Float: n}
-	case p.match(lexer.NumberI):
-		n, err := strconv.ParseInt(p.prevTok.Lexeme, 10, 64)
-		if err != nil {
-			p.addError(p.prevTok, "Unable to parse value: "+p.prevTok.Lexeme+".")
-			return nil
-		}
-		return &object.NumberExpr{Token: p.prevTok, Int: int(n)}
+	case p.match(lexer.NumberF, lexer.NumberI):
+		return p.parseNumber()
 	case p.match(lexer.String, lexer.RawString):
 		return &object.StringExpr{Token: p.prevTok, Value: p.prevTok.Lexeme}
 	case p.match(lexer.UTString):
@@ -198,6 +186,25 @@ func (p *Parser) primary() object.Expr {
 
 	p.addError(p.curTok, "Expect expression.")
 	return nil
+}
+
+func (p *Parser) parseNumber() *object.NumberExpr {
+	tok := p.prevTok
+	if tok.Type == lexer.NumberF {
+		n, err := strconv.ParseFloat(p.prevTok.Lexeme, 64)
+		if err != nil {
+			p.addError(p.prevTok, "Unable to parse value: "+p.prevTok.Lexeme+".")
+			return nil
+		}
+		return &object.NumberExpr{Token: tok, Float: n}
+	}
+
+	n, err := strconv.ParseInt(p.prevTok.Lexeme, 10, 64)
+	if err != nil {
+		p.addError(p.prevTok, "Unable to parse value: "+p.prevTok.Lexeme+".")
+		return nil
+	}
+	return &object.NumberExpr{Token: p.prevTok, Int: int(n)}
 }
 
 func (p *Parser) synchronize() {
