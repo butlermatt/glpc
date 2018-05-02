@@ -12,24 +12,6 @@ type Stmt interface {
 	Accept(StmtVisitor) error
 }
 
-// ListExpr is a Expr of a List
-type ListExpr struct {
-	Values []Expr
-}
-
-// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
-func (l *ListExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitListExpr(l) }
-
-// NumberExpr is a Expr of a Number
-type NumberExpr struct {
-	Token *lexer.Token
-	Float float64
-	Int   int
-}
-
-// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
-func (n *NumberExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitNumberExpr(n) }
-
 // NullExpr is a Expr of a Null
 type NullExpr struct {
 	Token *lexer.Token
@@ -86,16 +68,34 @@ func (g *GroupingExpr) Accept(visitor ExprVisitor) (Object, error) {
 	return visitor.VisitGroupingExpr(g)
 }
 
+// ListExpr is a Expr of a List
+type ListExpr struct {
+	Values []Expr
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (l *ListExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitListExpr(l) }
+
+// NumberExpr is a Expr of a Number
+type NumberExpr struct {
+	Token *lexer.Token
+	Float float64
+	Int   int
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (n *NumberExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitNumberExpr(n) }
+
 // ExprVisitor will visit Expr objects and must receive calls to their applicable methods.
 type ExprVisitor interface {
-	VisitListExpr(expr *ListExpr) (Object, error)
-	VisitNumberExpr(expr *NumberExpr) (Object, error)
 	VisitNullExpr(expr *NullExpr) (Object, error)
 	VisitStringExpr(expr *StringExpr) (Object, error)
 	VisitUnaryExpr(expr *UnaryExpr) (Object, error)
 	VisitVariableExpr(expr *VariableExpr) (Object, error)
 	VisitBooleanExpr(expr *BooleanExpr) (Object, error)
 	VisitGroupingExpr(expr *GroupingExpr) (Object, error)
+	VisitListExpr(expr *ListExpr) (Object, error)
+	VisitNumberExpr(expr *NumberExpr) (Object, error)
 }
 
 // ExpressionStmt is a Stmt of a Expression
@@ -106,7 +106,17 @@ type ExpressionStmt struct {
 // Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
 func (e *ExpressionStmt) Accept(visitor StmtVisitor) error { return visitor.VisitExpressionStmt(e) }
 
+// VarStmt is a Stmt of a Var
+type VarStmt struct {
+	Name  *lexer.Token
+	Value Expr
+}
+
+// Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
+func (v *VarStmt) Accept(visitor StmtVisitor) error { return visitor.VisitVarStmt(v) }
+
 // StmtVisitor will visit Stmt objects and must receive calls to their applicable methods.
 type StmtVisitor interface {
 	VisitExpressionStmt(stmt *ExpressionStmt) error
+	VisitVarStmt(stmt *VarStmt) error
 }

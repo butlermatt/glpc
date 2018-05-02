@@ -7,6 +7,41 @@ import (
 	"github.com/butlermatt/glpc/object"
 )
 
+func TestVarStatement(t *testing.T) {
+	tests := []struct{
+		input string
+		ident string
+		value interface{}
+	}{
+		{"var x = 5;", "x", int(5)},
+		{"var hello = 5.23;", "hello", float64(5.23)},
+		{"var y = true;", "y", true},
+		{"var x = y;", "x", "y"},
+	}
+
+	for i, tt := range tests {
+		l := lexer.New([]byte(tt.input), "testfile.gpc")
+		p := New(l)
+		stmts := p.Parse()
+		checkParseErrors(t, p)
+
+		if len(stmts) != 1 {
+			t.Errorf("test %d: incorrect number of statements. expected=%d, got=%d", i, 1, len(stmts))
+			continue
+		}
+
+		if !testVariable(t, stmts[0], tt.ident) {
+			continue
+		}
+
+		val := stmts[0].(*object.VarStmt)
+		if !testLiteralExpression(t, val.Value, tt.value) {
+			t.Errorf("failed on test %d", i)
+			continue
+		}
+	}
+}
+
 func TestBooleanLiteralExpression(t *testing.T) {
 	tests := []struct {
 		input string
@@ -358,6 +393,20 @@ func TestVariableExpr(t *testing.T) {
 	}
 }
 
+func testLiteralExpression(t *testing.T, expr object.Expr, expected interface{}) bool {
+	switch v := expected.(type) {
+	case float64, int:
+		return testNumberLiteral(t, expr, v)
+	case string:
+		return testIdentifier(t, expr, v)
+	case bool:
+		return testBooleanLiteral(t, expr, v)
+	}
+
+	t.Errorf("type of expr not handled. got=%T", expected)
+	return false
+}
+
 func testBooleanLiteral(t *testing.T, expr object.Expr, value bool) bool {
 	be, ok := expr.(*object.BooleanExpr)
 	if !ok {
@@ -367,6 +416,21 @@ func testBooleanLiteral(t *testing.T, expr object.Expr, value bool) bool {
 
 	if be.Value != value {
 		t.Errorf("value did not match. expected=%t, got=%t", value, be.Value)
+		return false
+	}
+
+	return true
+}
+
+func testIdentifier(t *testing.T, expr object.Expr, value string) bool {
+	ident, ok := expr.(*object.VariableExpr)
+	if !ok {
+		t.Errorf("expr wrong type. expected=*object.VariableExpr, got=%T", expr)
+		return false
+	}
+
+	if ident.Name.Lexeme != value {
+		t.Errorf("name wrong value. expected=%q, got=%q", value, ident.Name.Lexeme)
 		return false
 	}
 
@@ -408,6 +472,21 @@ func testStringLiteral(t *testing.T, expr object.Expr, value string) bool {
 
 	if se.Value != value {
 		t.Errorf("value did not match. expected=%q, got=%q", value, se.Value)
+		return false
+	}
+
+	return true
+}
+
+func testVariable(t *testing.T, stmt object.Stmt, ident string) bool {
+	s, ok := stmt.(*object.VarStmt)
+	if !ok {
+		t.Errorf("Stmt wrong type, expected=*object.VarStmt, got=%T", stmt)
+		return false
+	}
+
+	if s.Name.Lexeme != ident {
+		t.Errorf("Name is wrong value. expected=%q, got=%q", ident, s.Name.Lexeme)
 		return false
 	}
 

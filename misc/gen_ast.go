@@ -27,6 +27,7 @@ func main() {
 
 	statements := map[string]string{
 		"Expression": "Expression Expr",
+		"Var": "Name *lexer.Token, Value Expr",
 	}
 
 	err := defineAst(outDir, expressions, statements)

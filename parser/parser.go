@@ -107,6 +107,8 @@ func (p *Parser) declaration() object.Stmt {
 	var stmt object.Stmt
 
 	switch {
+	case p.match(lexer.Var):
+		stmt = p.varDeclaration()
 	default:
 		stmt = p.statement()
 	}
@@ -118,6 +120,22 @@ func (p *Parser) declaration() object.Stmt {
 	}
 
 	return stmt
+}
+
+func (p *Parser) varDeclaration() object.Stmt {
+	if !p.consume(lexer.Ident, "Expect variable name.") {
+		return nil
+	}
+
+	name := p.prevTok
+
+	var init object.Expr
+	if p.match(lexer.Equal) {
+		init = p.expression()
+	}
+
+	p.consume(lexer.Semicolon, "Expect ';' after variable declaration.")
+	return &object.VarStmt{Name: name, Value: init}
 }
 
 func (p *Parser) statement() object.Stmt {
