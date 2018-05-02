@@ -1,9 +1,11 @@
 package parser
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/butlermatt/glpc/lexer"
 	"github.com/butlermatt/glpc/object"
-	"strconv"
 )
 
 // ParseError represents compile time syntax errors that the Parser discovers. It will try to recover from them
@@ -15,6 +17,10 @@ type ParseError struct {
 	Where string
 	// Msg will attempt to describe the error encountered.
 	Msg string
+}
+
+func (pe ParseError) Error() string {
+	return fmt.Sprintf("On line %d: %s - %s", pe.Line, pe.Where, pe.Msg)
 }
 
 // Parser iterates through the tokens scanned by the lexer and generates the correct AST.
@@ -151,6 +157,8 @@ func (p *Parser) primary() object.Expr {
 	switch {
 	case p.match(lexer.False, lexer.True):
 		return &object.BooleanExpr{Token: p.prevTok, Value: p.prevTok.Type == lexer.True}
+	case p.match(lexer.Ident):
+		return &object.VariableExpr{Name: p.prevTok}
 	case p.match(lexer.Null):
 		return &object.NullExpr{Token: p.prevTok, Value: nil}
 	case p.match(lexer.NumberF, lexer.NumberI):

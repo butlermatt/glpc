@@ -324,6 +324,40 @@ func TestUnterminatedString(t *testing.T) {
 	}
 }
 
+func TestVariableExpr(t *testing.T) {
+	tests := []struct{
+		input string
+		expected string
+	}{
+		{"x;", "x"},
+		{"hello;", "hello"},
+	}
+
+	for i, tt := range tests {
+		l := lexer.New([]byte(tt.input), "testfile.gpc")
+		p := New(l)
+		stmts := p.Parse()
+		checkParseErrors(t, p)
+
+		if len(stmts) != 1 {
+			t.Errorf("test %d: wrong number of statements. expected=%d, got=%d", i, 1, len(stmts))
+			continue
+		}
+
+		es := stmts[0].(*object.ExpressionStmt)
+		ve, ok := es.Expression.(*object.VariableExpr)
+
+		if !ok {
+			t.Errorf("test %d: Expression wrong type. expected=*object.VariableExpr, got=%T", i, es.Expression)
+			continue
+		}
+
+		if ve.Name.Lexeme != tt.expected {
+			t.Errorf("test %d: Name does not match. expected=%q, got=%q", i, tt.expected, ve.Name.Lexeme)
+		}
+	}
+}
+
 func testBooleanLiteral(t *testing.T, expr object.Expr, value bool) bool {
 	be, ok := expr.(*object.BooleanExpr)
 	if !ok {

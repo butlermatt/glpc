@@ -12,25 +12,6 @@ type Stmt interface {
 	Accept(StmtVisitor) error
 }
 
-// BooleanExpr is a Expr of a Boolean
-type BooleanExpr struct {
-	Token *lexer.Token
-	Value bool
-}
-
-// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
-func (b *BooleanExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitBooleanExpr(b) }
-
-// GroupingExpr is a Expr of a Grouping
-type GroupingExpr struct {
-	Expression Expr
-}
-
-// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
-func (g *GroupingExpr) Accept(visitor ExprVisitor) (Object, error) {
-	return visitor.VisitGroupingExpr(g)
-}
-
 // ListExpr is a Expr of a List
 type ListExpr struct {
 	Values []Expr
@@ -76,15 +57,45 @@ type UnaryExpr struct {
 // Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
 func (u *UnaryExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitUnaryExpr(u) }
 
+// VariableExpr is a Expr of a Variable
+type VariableExpr struct {
+	Name *lexer.Token
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (v *VariableExpr) Accept(visitor ExprVisitor) (Object, error) {
+	return visitor.VisitVariableExpr(v)
+}
+
+// BooleanExpr is a Expr of a Boolean
+type BooleanExpr struct {
+	Token *lexer.Token
+	Value bool
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (b *BooleanExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitBooleanExpr(b) }
+
+// GroupingExpr is a Expr of a Grouping
+type GroupingExpr struct {
+	Expression Expr
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (g *GroupingExpr) Accept(visitor ExprVisitor) (Object, error) {
+	return visitor.VisitGroupingExpr(g)
+}
+
 // ExprVisitor will visit Expr objects and must receive calls to their applicable methods.
 type ExprVisitor interface {
-	VisitBooleanExpr(expr *BooleanExpr) (Object, error)
-	VisitGroupingExpr(expr *GroupingExpr) (Object, error)
 	VisitListExpr(expr *ListExpr) (Object, error)
 	VisitNumberExpr(expr *NumberExpr) (Object, error)
 	VisitNullExpr(expr *NullExpr) (Object, error)
 	VisitStringExpr(expr *StringExpr) (Object, error)
 	VisitUnaryExpr(expr *UnaryExpr) (Object, error)
+	VisitVariableExpr(expr *VariableExpr) (Object, error)
+	VisitBooleanExpr(expr *BooleanExpr) (Object, error)
+	VisitGroupingExpr(expr *GroupingExpr) (Object, error)
 }
 
 // ExpressionStmt is a Stmt of a Expression
