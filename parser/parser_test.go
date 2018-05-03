@@ -80,36 +80,29 @@ func TestAssignExpression(t *testing.T) {
 	}
 }
 
-func TestBadAssignExpr(t *testing.T) {
-	input := "7 = x;"
-
-	l := lexer.New([]byte(input), "testfile.gpc")
-	p := New(l)
-	stmts := p.Parse()
-
-	if len(stmts) != 0 {
-		t.Fatalf("wrong number of statements. expected=0, got=%d", len(stmts))
+func TestParserErrors(t *testing.T) {
+	tests := []struct {
+		input   string
+		numErrs int
+		where   string
+		msg     string
+	}{
+		{`"hello world;`, 2, `"hello world;`, "Unterminated string."},
+		{"7 = x;", 1, "=", "Invalid assignment target."},
+		{"(-x;", 2, ";", "Expect ')' after expression."},
+		{"[1, 2, 3", 2, "at end", "Expect ']' after list values."},
+		{"var ;", 1, ";", "Expect variable name."},
+		{"var x", 1, "at end", "Expect ';' after variable declaration."},
+		{"x = true", 1, "at end", "Expect ';' after value."},
 	}
 
-	errs := p.Errors()
-	// 2 because of Unterminated string, then missing semicolon
-	if len(errs) != 1 {
-		t.Fatalf("wrong number of errors. expected=1, got=%d", len(errs))
+	for i, tt := range tests {
+		l := lexer.New([]byte(tt.input), "testfile.gpc")
+		p := New(l)
+		if !testParseErrors(t, p, tt.numErrs, tt.where, tt.msg) {
+			t.Errorf("last error occured in test %d", i+1)
+		}
 	}
-
-	e := errs[0]
-	if e.Line != 1 {
-		t.Errorf("error on wrong line, expected=1, got=%d", e.Line)
-	}
-
-	if e.Where != "=" {
-		t.Errorf("error at wrong location. expected=%q, got=%q", "=", e.Where)
-	}
-
-	if e.Msg != "invalid assignment target." {
-		t.Errorf("wrong error message. expected=%q, got=%q", "invalid assignment target.", e.Msg)
-	}
-
 }
 
 func TestBooleanLiteralExpression(t *testing.T) {
@@ -398,37 +391,6 @@ func TestUnaryExpression(t *testing.T) {
 
 }
 
-func TestUnterminatedString(t *testing.T) {
-	input := `"hello world;`
-
-	l := lexer.New([]byte(input), "testfile.gpc")
-	p := New(l)
-	stmts := p.Parse()
-
-	if len(stmts) != 0 {
-		t.Fatalf("wrong number of statements. expected=0, got=%d", len(stmts))
-	}
-
-	errs := p.Errors()
-	// 2 because of Unterminated string, then missing semicolon
-	if len(errs) != 2 {
-		t.Fatalf("wrong number of errors. expected=1, got=%d", len(errs))
-	}
-
-	e := errs[0]
-	if e.Line != 1 {
-		t.Errorf("error on wrong line, expected=1, got=%d", e.Line)
-	}
-
-	if e.Where != `"hello world;` {
-		t.Errorf("error at wrong location. expected=%q, got=%q", `"hello world;`, e.Where)
-	}
-
-	if e.Msg != "unterminated string" {
-		t.Errorf("wrong error message. expected=%q, got=%q", "unterminated string", e.Msg)
-	}
-}
-
 func TestVariableExpr(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -587,6 +549,40 @@ func testVariable(t *testing.T, stmt object.Stmt, ident string) bool {
 
 	if s.Name.Lexeme != ident {
 		t.Errorf("Name is wrong value. expected=%q, got=%q", ident, s.Name.Lexeme)
+		return false
+	}
+
+	return true
+}
+
+func testParseErrors(t *testing.T, p *Parser, numErrs int, where, msg string) bool {
+	stmts := p.Parse()
+
+	if len(stmts) != 0 {
+		t.Errorf("wrong number of statements. expected=0, got=%d", len(stmts))
+		return false
+	}
+
+	errs := p.Errors()
+	// 2 because of Unterminated string, then missing semicolon
+	if len(errs) != numErrs {
+		t.Errorf("wrong number of errors. expected=1, got=%d", len(errs))
+		return false
+	}
+
+	e := errs[0]
+	if e.Line != 1 {
+		t.Errorf("error on wrong line, expected=1, got=%d", e.Line)
+		return false
+	}
+
+	if e.Where != where {
+		t.Errorf("error at wrong location. expected=%q, got=%q", where, e.Where)
+		return false
+	}
+
+	if e.Msg != msg {
+		t.Errorf("wrong error message. expected=%q, got=%q", msg, e.Msg)
 		return false
 	}
 

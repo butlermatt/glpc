@@ -171,7 +171,7 @@ func (p *Parser) assignment() object.Expr {
 			// TODO: Add case for GetExpr and IndexExpr
 		}
 
-		p.addError(equals, "invalid assignment target.")
+		p.addError(equals, "Invalid assignment target.")
 		return nil
 	}
 
@@ -204,7 +204,7 @@ func (p *Parser) primary() object.Expr {
 	case p.match(lexer.String, lexer.RawString):
 		return &object.StringExpr{Token: p.prevTok, Value: p.prevTok.Lexeme}
 	case p.match(lexer.UTString):
-		p.addError(p.prevTok, "unterminated string")
+		p.addError(p.prevTok, "Unterminated string.")
 		return nil
 	case p.match(lexer.LBracket):
 		var vals []object.Expr
@@ -216,7 +216,7 @@ func (p *Parser) primary() object.Expr {
 			}
 		}
 
-		if !p.consume(lexer.RBracket, "expect ']' after list values.") {
+		if !p.consume(lexer.RBracket, "Expect ']' after list values.") {
 			return nil
 		}
 		return &object.ListExpr{Values: vals}
@@ -225,7 +225,7 @@ func (p *Parser) primary() object.Expr {
 		if exp == nil {
 			return nil
 		}
-		if p.consume(lexer.RParen, "expect ')' after expression.") {
+		if p.consume(lexer.RParen, "Expect ')' after expression.") {
 			return &object.GroupingExpr{Expression: exp}
 		}
 	}
