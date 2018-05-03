@@ -175,6 +175,35 @@ func (p *Parser) assignment() object.Expr {
 		return nil
 	}
 
+	if p.match(lexer.MinusEq, lexer.PlusEq, lexer.StarEq, lexer.SlashEq, lexer.PercentEq, lexer.TildSlashEq) {
+		equals := p.prevTok
+		value := p.assignment()
+
+		var oper *lexer.Token
+		switch equals.Type {
+		case lexer.MinusEq:
+			oper = lexer.NewToken(lexer.Minus, "-", equals.Filename, equals.Line)
+		case lexer.PlusEq:
+			oper = lexer.NewToken(lexer.Plus, "+", equals.Filename, equals.Line)
+		case lexer.StarEq:
+			oper = lexer.NewToken(lexer.Star, "*", equals.Filename, equals.Line)
+		case lexer.SlashEq:
+			oper = lexer.NewToken(lexer.Slash, "/", equals.Filename, equals.Line)
+		case lexer.PercentEq:
+			oper = lexer.NewToken(lexer.Percent, "%", equals.Filename, equals.Line)
+		case lexer.TildSlashEq:
+			oper = lexer.NewToken(lexer.TildSlash, "~/", equals.Filename, equals.Line)
+		default:
+			return nil
+		}
+
+		be := &object.BinaryExpr{Left: expr, Operator: oper, Right: value}
+		switch e := expr.(type) {
+		case *object.VariableExpr:
+			return &object.AssignExpr{Name: e.Name, Value: be}
+		}
+	}
+
 	return expr
 }
 

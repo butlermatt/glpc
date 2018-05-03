@@ -80,6 +80,59 @@ func TestAssignExpression(t *testing.T) {
 	}
 }
 
+func TestCompoundAssignExpressions(t *testing.T) {
+	type bin struct {
+		left string
+		oper string
+		value interface{}
+	}
+
+	tests := []struct{
+		input string
+		name string
+		value bin
+	}{
+		{"x += 1;", "x", bin{"x", "+", 1}},
+		{"y -= 2.2;", "y", bin{"y", "-", 2.2}},
+		{"test *= 3;", "test", bin{"test", "*", 3}},
+		{"z /= 4;", "z", bin{"z", "/", 4}},
+		{"a ~/= 5;", "a", bin{"a", "~/", 5}},
+		{"b %= 6;", "b", bin{"b", "%", 6}},
+	}
+
+	for i, tt := range tests {
+		l := lexer.New([]byte(tt.input), "testfile.gpc")
+		p := New(l)
+		stmts := p.Parse()
+		checkParseErrors(t, p)
+
+		if len(stmts) != 1 {
+			t.Errorf("test %d: incorrect statements length. expected=%d, got=%d", i + 1, 1, len(stmts))
+			continue
+		}
+
+		s, ok := stmts[0].(*object.ExpressionStmt)
+		if !ok {
+			t.Errorf("test %d: statement incorrect type. expected=*object.ExpressionStmt, got=%T", i+1, stmts[0])
+			continue
+		}
+
+		ae, ok := s.Expression.(*object.AssignExpr)
+		if !ok {
+			t.Errorf("test %d: expression wrong type. expected=*object.AssignExpr, got=%T", i+1, s.Expression)
+			continue
+		}
+
+		if ae.Name.Lexeme != tt.name {
+			t.Errorf("test %d: name incorrect. expected=%q, got=%q", i+1, tt.name, ae.Name.Lexeme)
+		}
+
+		if !testBinaryExpression(t, ae.Value, tt.value.left, tt.value.oper, tt.value.value) {
+			t.Errorf("last error occured in test %d", i+1)
+		}
+	}
+}
+
 func TestBinaryExpressions(t *testing.T) {
 	tests := []struct{
 		input string
