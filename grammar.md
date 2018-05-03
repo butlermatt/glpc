@@ -44,7 +44,9 @@ block          → "{" declaration* "}" ;
 ```glpc
 expression     → assignment ;
 
-assignment     → ( call "." )? IDENTIFIER "=" assignment
+assignment     → ( call "." )? IDENTIFIER 
+                 ("=" | "+=" | "-=" | "*=" | "/=" | "%=" | "~/=") 
+                 assignment 
                | logic_or;
 
 logic_or       → logic_and ( "or" logic_and )* ;
