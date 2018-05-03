@@ -15,19 +15,20 @@ func main() {
 	outDir := os.Args[1]
 
 	expressions := map[string]string{
-		"Boolean": "Token *lexer.Token, Value bool",
+		"Assign":   "Name *lexer.Token, Value Expr",
+		"Boolean":  "Token *lexer.Token, Value bool",
 		"Grouping": "Expression Expr",
-		"List":    "Values []Expr",
-		"Number":  "Token *lexer.Token, Float float64, Int int",
-		"Null":    "Token *lexer.Token, Value interface{}",
-		"String":  "Token *lexer.Token, Value string",
-		"Unary":   "Operator *lexer.Token, Right Expr",
+		"List":     "Values []Expr",
+		"Number":   "Token *lexer.Token, Float float64, Int int",
+		"Null":     "Token *lexer.Token, Value interface{}",
+		"String":   "Token *lexer.Token, Value string",
+		"Unary":    "Operator *lexer.Token, Right Expr",
 		"Variable": "Name *lexer.Token",
 	}
 
 	statements := map[string]string{
 		"Expression": "Expression Expr",
-		"Var": "Name *lexer.Token, Value Expr",
+		"Var":        "Name *lexer.Token, Value Expr",
 	}
 
 	err := defineAst(outDir, expressions, statements)

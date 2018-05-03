@@ -8,7 +8,7 @@ import (
 )
 
 func TestVarStatement(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		input string
 		ident string
 		value interface{}
@@ -40,6 +40,76 @@ func TestVarStatement(t *testing.T) {
 			continue
 		}
 	}
+}
+
+func TestAssignExpression(t *testing.T) {
+	tests := []struct {
+		input string
+		name  string
+		value interface{}
+	}{
+		{"x = 5;", "x", 5},
+		{"y = 2.25;", "y", 2.25},
+		{"test = true;", "test", true},
+		{"list = [1, 2, 3];", "list", []int{1, 2, 3}},
+	}
+
+	for i, tt := range tests {
+		l := lexer.New([]byte(tt.input), "testfile.gpc")
+		p := New(l)
+		stmts := p.Parse()
+		checkParseErrors(t, p)
+
+		if len(stmts) != 1 {
+			t.Fatalf("test %d: incorrect number of statements. expected=%d, got=%d", i, 1, len(stmts))
+		}
+
+		s := stmts[0].(*object.ExpressionStmt)
+		ae, ok := s.Expression.(*object.AssignExpr)
+		if !ok {
+			t.Fatalf("test %d: expression is wrong type. expected=*object.AssignExpr, got=%T", i, s.Expression)
+		}
+
+		if ae.Name.Lexeme != tt.name {
+			t.Errorf("test %d: name does not match. expected=%q, got=%q", i, tt.name, ae.Name.Lexeme)
+		}
+
+		if !testLiteralExpression(t, ae.Value, tt.value) {
+			t.Errorf("last error in test %d", i)
+		}
+	}
+}
+
+func TestBadAssignExpr(t *testing.T) {
+	input := "7 = x;"
+
+	l := lexer.New([]byte(input), "testfile.gpc")
+	p := New(l)
+	stmts := p.Parse()
+
+	if len(stmts) != 0 {
+		t.Fatalf("wrong number of statements. expected=0, got=%d", len(stmts))
+	}
+
+	errs := p.Errors()
+	// 2 because of Unterminated string, then missing semicolon
+	if len(errs) != 1 {
+		t.Fatalf("wrong number of errors. expected=1, got=%d", len(errs))
+	}
+
+	e := errs[0]
+	if e.Line != 1 {
+		t.Errorf("error on wrong line, expected=1, got=%d", e.Line)
+	}
+
+	if e.Where != "=" {
+		t.Errorf("error at wrong location. expected=%q, got=%q", "=", e.Where)
+	}
+
+	if e.Msg != "invalid assignment target." {
+		t.Errorf("wrong error message. expected=%q, got=%q", "invalid assignment target.", e.Msg)
+	}
+
 }
 
 func TestBooleanLiteralExpression(t *testing.T) {
@@ -97,31 +167,31 @@ func TestGroupingExpression(t *testing.T) {
 }
 
 func TestListExpression(t *testing.T) {
-		input := "[0, 'one', true];"
+	input := "[0, 'one', true];"
 
-		l := lexer.New([]byte(input), "testfile.gpc")
-		p := New(l)
-		stmts := p.Parse()
-		checkParseErrors(t, p)
+	l := lexer.New([]byte(input), "testfile.gpc")
+	p := New(l)
+	stmts := p.Parse()
+	checkParseErrors(t, p)
 
-		if len(stmts) != 1 {
-			t.Fatalf("statements is incorrect length. expected=%d, got=%d", 1, len(stmts))
-		}
+	if len(stmts) != 1 {
+		t.Fatalf("statements is incorrect length. expected=%d, got=%d", 1, len(stmts))
+	}
 
-		stmt := stmts[0].(*object.ExpressionStmt)
+	stmt := stmts[0].(*object.ExpressionStmt)
 
-		list, ok := stmt.Expression.(*object.ListExpr)
-		if !ok {
-			t.Fatalf("expr is wrong type. expected=*object.ListExpr, got=%T", stmt.Expression)
-		}
+	list, ok := stmt.Expression.(*object.ListExpr)
+	if !ok {
+		t.Fatalf("expr is wrong type. expected=*object.ListExpr, got=%T", stmt.Expression)
+	}
 
-		if len(list.Values) != 3 {
-			t.Fatalf("list contains incorrect number of values. expected=%d, got=%d", 3, len(list.Values))
-		}
+	if len(list.Values) != 3 {
+		t.Fatalf("list contains incorrect number of values. expected=%d, got=%d", 3, len(list.Values))
+	}
 
-		testNumberLiteral(t, list.Values[0], 0)
-		testStringLiteral(t, list.Values[1], "one")
-		testBooleanLiteral(t, list.Values[2], true)
+	testNumberLiteral(t, list.Values[0], 0)
+	testStringLiteral(t, list.Values[1], "one")
+	testBooleanLiteral(t, list.Values[2], true)
 }
 
 func TestNumberLiteralExpression(t *testing.T) {
@@ -186,8 +256,8 @@ func TestNullLiteralExpression(t *testing.T) {
 }
 
 func TestStringLiteralExpression(t *testing.T) {
-	tests := []struct{
-		input string
+	tests := []struct {
+		input    string
 		expected string
 	}{
 		{`"hello world";`, "hello world"},
@@ -360,8 +430,8 @@ func TestUnterminatedString(t *testing.T) {
 }
 
 func TestVariableExpr(t *testing.T) {
-	tests := []struct{
-		input string
+	tests := []struct {
+		input    string
 		expected string
 	}{
 		{"x;", "x"},
@@ -401,6 +471,8 @@ func testLiteralExpression(t *testing.T, expr object.Expr, expected interface{})
 		return testIdentifier(t, expr, v)
 	case bool:
 		return testBooleanLiteral(t, expr, v)
+	case []int:
+		return testListLiteral(t, expr, v)
 	}
 
 	t.Errorf("type of expr not handled. got=%T", expected)
@@ -463,6 +535,34 @@ func testNumberLiteral(t *testing.T, expr object.Expr, value interface{}) bool {
 	return true
 }
 
+func testListLiteral(t *testing.T, expr object.Expr, values []int) bool {
+	le, ok := expr.(*object.ListExpr)
+	if !ok {
+		t.Errorf("expr not correct type. expected=*object.ListExpr, got=%T", expr)
+		return false
+	}
+
+	if len(values) != len(le.Values) {
+		t.Errorf("list does not contain correct number of values. expected=%d, got=%d", len(values), len(le.Values))
+		return false
+	}
+
+	for i, v := range values {
+		ne, ok := le.Values[i].(*object.NumberExpr)
+		if !ok {
+			t.Errorf("Value unexpected type. expected=*object.NumberExpr, got=%T", le.Values[i])
+			return false
+		}
+
+		if ne.Int != v {
+			t.Errorf("Value is incorrect. expected=%d, got=%d (%v)", v, ne.Int, ne.Float)
+			return false
+		}
+	}
+
+	return true
+}
+
 func testStringLiteral(t *testing.T, expr object.Expr, value string) bool {
 	se, ok := expr.(*object.StringExpr)
 	if !ok {
@@ -501,7 +601,7 @@ func checkParseErrors(t *testing.T, p *Parser) {
 
 	t.Errorf("parser has %d errors", len(errors))
 	for _, msg := range errors {
-		t.Errorf("parser error on line: %d at %s: %s", msg.Line, msg.Where, msg.Msg)
+		t.Errorf("parser error on line: %d at '%s': %s", msg.Line, msg.Where, msg.Msg)
 	}
 	t.FailNow()
 }

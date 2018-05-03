@@ -155,7 +155,27 @@ func (p *Parser) expressionStatement() object.Stmt {
 }
 
 func (p *Parser) expression() object.Expr {
-	return p.unary()
+	return p.assignment()
+}
+
+func (p *Parser) assignment() object.Expr {
+	expr := p.unary()
+
+	if p.match(lexer.Equal) {
+		equals := p.prevTok
+		value := p.assignment()
+
+		switch e := expr.(type) {
+		case *object.VariableExpr:
+			return &object.AssignExpr{Name: e.Name, Value: value}
+			// TODO: Add case for GetExpr and IndexExpr
+		}
+
+		p.addError(equals, "invalid assignment target.")
+		return nil
+	}
+
+	return expr
 }
 
 func (p *Parser) unary() object.Expr {
