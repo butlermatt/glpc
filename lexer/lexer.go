@@ -66,16 +66,36 @@ func (l *Lexer) scanToken() {
 	case ']':
 		l.addTokenType(RBracket)
 	case '-':
-		l.addTokenType(Minus)
+		if l.match('=') {
+			l.addTokenType(MinusEq)
+		} else {
+			l.addTokenType(Minus)
+		}
 	case '+':
-		l.addTokenType(Plus)
+		if l.match('=') {
+			l.addTokenType(PlusEq)
+		} else {
+			l.addTokenType(Plus)
+		}
 	case '%':
-		l.addTokenType(Percent)
+		if l.match('=') {
+			l.addTokenType(PercentEq)
+		} else {
+			l.addTokenType(Percent)
+		}
 	case '*':
-		l.addTokenType(Star)
+		if l.match('=') {
+			l.addTokenType(StarEq)
+		} else {
+			l.addTokenType(Star)
+		}
 	case '~':
 		if l.match('/') {
-			l.addTokenType(TildSlash)
+			if l.match('=') {
+				l.addTokenType(TildSlashEq)
+			} else {
+				l.addTokenType(TildSlash)
+			}
 		} else {
 			l.addTokenType(Illegal)
 		}
@@ -85,6 +105,8 @@ func (l *Lexer) scanToken() {
 			for l.peek() != '\n' && l.peek() != 0 {
 				l.readChar()
 			}
+		} else if l.match('=') {
+			l.addTokenType(SlashEq)
 		} else {
 			l.addTokenType(Slash)
 		}

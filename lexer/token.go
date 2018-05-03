@@ -31,15 +31,9 @@ const (
 	RBracket  TokenType = "]"
 	LParen    TokenType = "("
 	RParen    TokenType = ")"
-	Minus     TokenType = "-"
-	Plus      TokenType = "+"
 	Semicolon TokenType = ";"
-	Slash     TokenType = "/"
-	Star      TokenType = "*"
-	Percent   TokenType = "%"
 
 	// Single or two character tokens.
-	TildSlash TokenType = "~/"
 	Bang      TokenType = "!"
 	BangEq    TokenType = "!="
 	Equal     TokenType = "="
@@ -48,6 +42,20 @@ const (
 	GreaterEq TokenType = ">="
 	Less      TokenType = "<"
 	LessEq    TokenType = "<="
+	Minus     TokenType = "-"
+	MinusEq   TokenType = "-="
+	Percent   TokenType = "%"
+	PercentEq TokenType = "%="
+	Plus      TokenType = "+"
+	PlusEq    TokenType = "+="
+	Slash     TokenType = "/"
+	SlashEq   TokenType = "/="
+	Star      TokenType = "*"
+	StarEq    TokenType = "*="
+	TildSlash TokenType = "~/"
+
+	TildSlashEq TokenType = "~/="
+
 
 	// Literals
 	Ident     TokenType = "IDENT"

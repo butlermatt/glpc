@@ -8,7 +8,7 @@ func TestLexer_ScanTokensCount(t *testing.T) {
 		input string
 		count int
 	}{
-		{`+-=[]()*/{}!`, 13},
+		{`+- =[]()*/{}!`, 13},
 		{`+
 // Ignore comment
 -
@@ -52,6 +52,7 @@ fn something true false
 if and or else for while
 class null this super return;
 break continue
+= +=-=%=*= /= ~/=
 `
 
 	expected := []struct {
@@ -95,7 +96,14 @@ break continue
 		{Semicolon, ";", 15},
 		{Break, "break", 16},
 		{Continue, "continue", 16},
-		{EOF, "", 17},
+		{Equal, "=", 17},
+		{PlusEq, "+=", 17},
+		{MinusEq, "-=", 17},
+		{PercentEq, "%=", 17},
+		{StarEq, "*=", 17},
+		{SlashEq, "/=", 17},
+		{TildSlashEq, "~/=", 17},
+		{EOF, "", 18},
 	}
 
 	l := New([]byte(input), "test.lpc")
