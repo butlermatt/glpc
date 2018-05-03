@@ -159,7 +159,7 @@ func (p *Parser) expression() object.Expr {
 }
 
 func (p *Parser) assignment() object.Expr {
-	expr := p.unary()
+	expr := p.equality()
 
 	if p.match(lexer.Equal) {
 		equals := p.prevTok
@@ -173,6 +173,87 @@ func (p *Parser) assignment() object.Expr {
 
 		p.addError(equals, "Invalid assignment target.")
 		return nil
+	}
+
+	return expr
+}
+
+func (p *Parser) equality() object.Expr {
+	expr := p.comparison()
+
+	for p.match(lexer.BangEq, lexer.EqualEq) {
+		if expr == nil {
+			return nil
+		}
+
+		oper := p.prevTok
+
+		right := p.comparison()
+		if right == nil {
+			return nil
+		}
+
+		expr = &object.BinaryExpr{Left: expr, Operator: oper, Right: right}
+	}
+
+	return expr
+}
+
+func (p *Parser) comparison() object.Expr {
+	expr := p.addition()
+
+	for p.match(lexer.Greater, lexer.GreaterEq, lexer.Less, lexer.LessEq) {
+		if expr == nil {
+			return nil
+		}
+
+		oper := p.prevTok
+		right := p.addition()
+		if right == nil {
+			return nil
+		}
+
+		expr = &object.BinaryExpr{Left: expr, Operator: oper, Right: right}
+	}
+
+	return expr
+}
+
+func (p *Parser) addition() object.Expr {
+	expr := p.multiplication()
+
+	for p.match(lexer.Plus, lexer.Minus) {
+		if expr == nil {
+			return nil
+		}
+
+		oper := p.prevTok
+		right := p.multiplication()
+		if right == nil {
+			return nil
+		}
+
+		expr = &object.BinaryExpr{Left: expr, Operator: oper, Right: right}
+	}
+
+	return expr
+}
+
+func (p *Parser) multiplication() object.Expr {
+	expr := p.unary()
+
+	for p.match(lexer.Star, lexer.Slash, lexer.Percent, lexer.TildSlash) {
+		if expr == nil {
+			return nil
+		}
+
+		oper := p.prevTok
+		right := p.unary()
+		if right == nil {
+			return nil
+		}
+
+		expr = &object.BinaryExpr{Left: expr, Operator: oper, Right: right}
 	}
 
 	return expr

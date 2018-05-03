@@ -80,30 +80,49 @@ func TestAssignExpression(t *testing.T) {
 	}
 }
 
-func TestParserErrors(t *testing.T) {
-	tests := []struct {
-		input   string
-		numErrs int
-		where   string
-		msg     string
+func TestBinaryExpressions(t *testing.T) {
+	tests := []struct{
+		input string
+		left  interface{}
+		oper  string
+		right interface{}
 	}{
-		{`"hello world;`, 2, `"hello world;`, "Unterminated string."},
-		{"7 = x;", 1, "=", "Invalid assignment target."},
-		{"(-x;", 2, ";", "Expect ')' after expression."},
-		{"[1, 2, 3", 2, "at end", "Expect ']' after list values."},
-		{"var ;", 1, ";", "Expect variable name."},
-		{"var x", 1, "at end", "Expect ';' after variable declaration."},
-		{"x = true", 1, "at end", "Expect ';' after value."},
+		{"5 + 4;", 5, "+", 4},
+		{"5 - 4;", 5, "-", 4},
+		{"5 * 4;", 5, "*", 4},
+		{"5 / 4;", 5, "/", 4},
+		{"5 % 4;", 5, "%", 4},
+		{"5 ~/ 4;", 5, "~/", 4},
+		{"5 < 4;", 5, "<", 4},
+		{"5 > 4;", 5, ">", 4},
+		{"5 <= 4;", 5, "<=", 4},
+		{"5.5 == 4.4;", 5.5, "==", 4.4},
+		{"5 != 4;", 5, "!=", 4},
+		{"true == true;", true, "==", true},
+		{"true != false;", true, "!=", false},
 	}
 
 	for i, tt := range tests {
 		l := lexer.New([]byte(tt.input), "testfile.gpc")
 		p := New(l)
-		if !testParseErrors(t, p, tt.numErrs, tt.where, tt.msg) {
-			t.Errorf("last error occured in test %d", i+1)
+		stmts := p.Parse()
+		checkParseErrors(t, p)
+
+		if len(stmts) != 1 {
+			t.Errorf("on test %d: incorrect number of statements. expected=1, got=%d", i + 1, len(stmts))
+			continue
 		}
+
+		s, ok := stmts[0].(*object.ExpressionStmt)
+		if !ok {
+			t.Errorf("on test %d: Statement wrong type. expected=*object.ExpressionStmt, got=%T", i + 1, stmts[0])
+			continue
+		}
+
+		testBinaryExpression(t, s.Expression, tt.left, tt.oper, tt.right)
 	}
 }
+
 
 func TestBooleanLiteralExpression(t *testing.T) {
 	tests := []struct {
@@ -245,6 +264,31 @@ func TestNullLiteralExpression(t *testing.T) {
 
 	if ne.Value != value {
 		t.Fatalf("null value incorrect. expected=%v, got=%v", value, ne.Value)
+	}
+}
+
+func TestParserErrors(t *testing.T) {
+	tests := []struct {
+		input   string
+		numErrs int
+		where   string
+		msg     string
+	}{
+		{`"hello world;`, 2, `"hello world;`, "Unterminated string."},
+		{"7 = x;", 1, "=", "Invalid assignment target."},
+		{"(-x;", 2, ";", "Expect ')' after expression."},
+		{"[1, 2, 3", 2, "at end", "Expect ']' after list values."},
+		{"var ;", 1, ";", "Expect variable name."},
+		{"var x", 1, "at end", "Expect ';' after variable declaration."},
+		{"x = true", 1, "at end", "Expect ';' after value."},
+	}
+
+	for i, tt := range tests {
+		l := lexer.New([]byte(tt.input), "testfile.gpc")
+		p := New(l)
+		if !testParseErrors(t, p, tt.numErrs, tt.where, tt.msg) {
+			t.Errorf("last error occured in test %d", i+1)
+		}
 	}
 }
 
@@ -439,6 +483,29 @@ func testLiteralExpression(t *testing.T, expr object.Expr, expected interface{})
 
 	t.Errorf("type of expr not handled. got=%T", expected)
 	return false
+}
+
+func testBinaryExpression(t *testing.T, expr object.Expr, left interface{}, oper string, right interface{}) bool {
+	be, ok := expr.(*object.BinaryExpr)
+	if !ok {
+		t.Errorf("expr is wrong type. expected=*object.BinaryExpr, got=%T", expr)
+		return false
+	}
+
+	if !testLiteralExpression(t, be.Left, left) {
+		return false
+	}
+
+	if be.Operator.Lexeme != oper {
+		t.Errorf("Operator incorrect. expected=%q, got=%q", oper, be.Operator.Lexeme)
+		return false
+	}
+
+	if !testLiteralExpression(t, be.Right, right) {
+		return false
+	}
+
+	return true
 }
 
 func testBooleanLiteral(t *testing.T, expr object.Expr, value bool) bool {
