@@ -14,24 +14,24 @@ func main() {
 
 	outDir := os.Args[1]
 
-	expressions := map[string]string{
-		"Assign":   "Name *lexer.Token, Value Expr",
-		"Binary":   "Left Expr, Operator *lexer.Token, Right Expr",
-		"Boolean":  "Token *lexer.Token, Value bool",
-		"Grouping": "Expression Expr",
-		"Index":    "Left Expr, Operator *lexer.Token, Right Expr",
-		"List":     "Values []Expr",
-		"Logical":  "Left Expr, Operator *lexer.Token, Right Expr",
-		"Number":   "Token *lexer.Token, Float float64, Int int",
-		"Null":     "Token *lexer.Token, Value interface{}",
-		"String":   "Token *lexer.Token, Value string",
-		"Unary":    "Operator *lexer.Token, Right Expr",
-		"Variable": "Name *lexer.Token",
+	expressions := []string{
+		"Assign   : Name *lexer.Token, Value Expr",
+		"Binary   : Left Expr, Operator *lexer.Token, Right Expr",
+		"Boolean  : Token *lexer.Token, Value bool",
+		"Grouping : Expression Expr",
+		"Index    : Left Expr, Operator *lexer.Token, Right Expr",
+		"List     : Values []Expr",
+		"Logical  : Left Expr, Operator *lexer.Token, Right Expr",
+		"Number   : Token *lexer.Token, Float float64, Int int",
+		"Null     : Token *lexer.Token, Value interface{}",
+		"String   : Token *lexer.Token, Value string",
+		"Unary    : Operator *lexer.Token, Right Expr",
+		"Variable : Name *lexer.Token",
 	}
 
-	statements := map[string]string{
-		"Expression": "Expression Expr",
-		"Var":        "Name *lexer.Token, Value Expr",
+	statements := []string{
+		"Expression : Expression Expr",
+		"Var        : Name *lexer.Token, Value Expr",
 	}
 
 	err := defineAst(outDir, expressions, statements)
@@ -41,7 +41,7 @@ func main() {
 	}
 }
 
-func defineAst(outDir string, exprs map[string]string, stmts map[string]string) error {
+func defineAst(outDir string, exprs []string, stmts []string) error {
 	file, err := os.Create(outDir + "/ast.go")
 	if err != nil {
 		return err
@@ -63,9 +63,11 @@ type Stmt interface {
 `)
 
 	var exprNames []string
-	for name, definition := range exprs {
+	for _, definition := range exprs {
+		parts := strings.Split(definition, " : ")
+		name := strings.TrimSpace(parts[0])
 		exprNames = append(exprNames, name)
-		err = defineType(file, "Expr", name, definition)
+		err = defineType(file, "Expr", name, strings.TrimSpace(parts[1]))
 		if err != nil {
 			return err
 		}
@@ -77,9 +79,11 @@ type Stmt interface {
 	}
 
 	var stmtNames []string
-	for name, definition := range stmts {
+	for _, definition := range stmts {
+		parts := strings.Split(definition, " : ")
+		name := strings.TrimSpace(parts[0])
 		stmtNames = append(stmtNames, name)
-		err = defineType(file, "Stmt", name, definition)
+		err = defineType(file, "Stmt", name, strings.TrimSpace(parts[1]))
 		if err != nil {
 			return err
 		}
