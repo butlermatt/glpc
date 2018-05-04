@@ -21,14 +21,33 @@ type AssignExpr struct {
 // Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
 func (a *AssignExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitAssignExpr(a) }
 
-// BooleanExpr is a Expr of a Boolean
-type BooleanExpr struct {
-	Token *lexer.Token
-	Value bool
+// IndexExpr is a Expr of a Index
+type IndexExpr struct {
+	Left     Expr
+	Operator *lexer.Token
+	Right    Expr
 }
 
 // Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
-func (b *BooleanExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitBooleanExpr(b) }
+func (i *IndexExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitIndexExpr(i) }
+
+// StringExpr is a Expr of a String
+type StringExpr struct {
+	Token *lexer.Token
+	Value string
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (s *StringExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitStringExpr(s) }
+
+// UnaryExpr is a Expr of a Unary
+type UnaryExpr struct {
+	Operator *lexer.Token
+	Right    Expr
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (u *UnaryExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitUnaryExpr(u) }
 
 // VariableExpr is a Expr of a Variable
 type VariableExpr struct {
@@ -49,24 +68,6 @@ type NullExpr struct {
 // Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
 func (n *NullExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitNullExpr(n) }
 
-// StringExpr is a Expr of a String
-type StringExpr struct {
-	Token *lexer.Token
-	Value string
-}
-
-// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
-func (s *StringExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitStringExpr(s) }
-
-// UnaryExpr is a Expr of a Unary
-type UnaryExpr struct {
-	Operator *lexer.Token
-	Right    Expr
-}
-
-// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
-func (u *UnaryExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitUnaryExpr(u) }
-
 // BinaryExpr is a Expr of a Binary
 type BinaryExpr struct {
 	Left     Expr
@@ -76,6 +77,15 @@ type BinaryExpr struct {
 
 // Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
 func (b *BinaryExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitBinaryExpr(b) }
+
+// BooleanExpr is a Expr of a Boolean
+type BooleanExpr struct {
+	Token *lexer.Token
+	Value bool
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (b *BooleanExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitBooleanExpr(b) }
 
 // GroupingExpr is a Expr of a Grouping
 type GroupingExpr struct {
@@ -118,25 +128,18 @@ func (n *NumberExpr) Accept(visitor ExprVisitor) (Object, error) { return visito
 // ExprVisitor will visit Expr objects and must receive calls to their applicable methods.
 type ExprVisitor interface {
 	VisitAssignExpr(expr *AssignExpr) (Object, error)
-	VisitBooleanExpr(expr *BooleanExpr) (Object, error)
-	VisitVariableExpr(expr *VariableExpr) (Object, error)
-	VisitNullExpr(expr *NullExpr) (Object, error)
+	VisitIndexExpr(expr *IndexExpr) (Object, error)
 	VisitStringExpr(expr *StringExpr) (Object, error)
 	VisitUnaryExpr(expr *UnaryExpr) (Object, error)
+	VisitVariableExpr(expr *VariableExpr) (Object, error)
+	VisitNullExpr(expr *NullExpr) (Object, error)
 	VisitBinaryExpr(expr *BinaryExpr) (Object, error)
+	VisitBooleanExpr(expr *BooleanExpr) (Object, error)
 	VisitGroupingExpr(expr *GroupingExpr) (Object, error)
 	VisitListExpr(expr *ListExpr) (Object, error)
 	VisitLogicalExpr(expr *LogicalExpr) (Object, error)
 	VisitNumberExpr(expr *NumberExpr) (Object, error)
 }
-
-// ExpressionStmt is a Stmt of a Expression
-type ExpressionStmt struct {
-	Expression Expr
-}
-
-// Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
-func (e *ExpressionStmt) Accept(visitor StmtVisitor) error { return visitor.VisitExpressionStmt(e) }
 
 // VarStmt is a Stmt of a Var
 type VarStmt struct {
@@ -147,8 +150,16 @@ type VarStmt struct {
 // Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
 func (v *VarStmt) Accept(visitor StmtVisitor) error { return visitor.VisitVarStmt(v) }
 
+// ExpressionStmt is a Stmt of a Expression
+type ExpressionStmt struct {
+	Expression Expr
+}
+
+// Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
+func (e *ExpressionStmt) Accept(visitor StmtVisitor) error { return visitor.VisitExpressionStmt(e) }
+
 // StmtVisitor will visit Stmt objects and must receive calls to their applicable methods.
 type StmtVisitor interface {
-	VisitExpressionStmt(stmt *ExpressionStmt) error
 	VisitVarStmt(stmt *VarStmt) error
+	VisitExpressionStmt(stmt *ExpressionStmt) error
 }

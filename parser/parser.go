@@ -322,7 +322,27 @@ func (p *Parser) unary() object.Expr {
 		return &object.UnaryExpr{Operator: oper, Right: right}
 	}
 
-	return p.primary()
+	return p.index()
+}
+
+func (p *Parser) index() object.Expr {
+	expr := p.primary()
+
+	for p.match(lexer.LBracket) {
+		if expr == nil {
+			return nil
+		}
+
+		oper := p.prevTok
+		right := p.expression()
+		if !p.consume(lexer.RBracket, "Expect ']' after index.") {
+			return nil
+		}
+
+		expr = &object.IndexExpr{Left: expr, Operator: oper, Right: right}
+	}
+
+	return expr
 }
 
 func (p *Parser) primary() object.Expr {

@@ -19,6 +19,7 @@ func main() {
 		"Binary":   "Left Expr, Operator *lexer.Token, Right Expr",
 		"Boolean":  "Token *lexer.Token, Value bool",
 		"Grouping": "Expression Expr",
+		"Index":    "Left Expr, Operator *lexer.Token, Right Expr",
 		"List":     "Values []Expr",
 		"Logical":  "Left Expr, Operator *lexer.Token, Right Expr",
 		"Number":   "Token *lexer.Token, Float float64, Int int",

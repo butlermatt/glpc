@@ -48,6 +48,11 @@ func (p *AstPrinter) VisitBooleanExpr(expr *object.BooleanExpr) (object.Object, 
 func (p *AstPrinter) VisitGroupingExpr(expr *object.GroupingExpr) (object.Object, error) {
 	return p.parenthesize("group", expr.Expression), nil
 }
+
+func (p *AstPrinter) VisitIndexExpr(expr *object.IndexExpr) (object.Object, error) {
+	return p.parenthesize("[]", expr.Left, expr.Right), nil
+}
+
 func (p *AstPrinter) VisitListExpr(expr *object.ListExpr) (object.Object, error) {
 	var b bytes.Buffer
 
@@ -112,6 +117,7 @@ func TestASTGrouping(t *testing.T) {
 		{"3 + 4 * 5 == 3 * 1 + 4 * 5;", "(== (+ 3 (* 4 5)) (+ (* 3 1) (* 4 5)))"},
 		{"a += b;", "(= a (+ a b))"},
 		{"true or false;", "(or true false)"},
+		{"a[b + c];", "([] a (+ b c))"},
 	}
 
 	for i, tt := range tests {

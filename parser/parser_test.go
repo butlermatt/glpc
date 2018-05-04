@@ -231,6 +231,44 @@ func TestGroupingExpression(t *testing.T) {
 
 }
 
+func TestIndexExpressions(t *testing.T) {
+	tests := []struct{
+		input string
+		left  interface{}
+		right interface{}
+	}{
+		{"a[5];", "a", 5},
+		{"some[thing];", "some", "thing"},
+	}
+
+	for i, tt := range tests {
+		l := lexer.New([]byte(tt.input), "testfile.gpc")
+		p := New(l)
+		stmts := p.Parse()
+		checkParseErrors(t, p)
+
+		if len(stmts) != 1 {
+			t.Errorf("on test %d: incorrect number of statements. expected=1, got=%d", i + 1, len(stmts))
+			continue
+		}
+
+		s, ok := stmts[0].(*object.ExpressionStmt)
+		if !ok {
+			t.Errorf("on test %d: Statement wrong type. expected=*object.ExpressionStmt, got=%T", i + 1, stmts[0])
+			continue
+		}
+
+		ie, ok := s.Expression.(*object.IndexExpr)
+		if !ok {
+			t.Errorf("on test %d: Expression wrong type. expected=*object.IndexExpr, got=%T", i+1, s.Expression)
+			continue
+		}
+
+		testLiteralExpression(t, ie.Left, tt.left)
+		testLiteralExpression(t, ie.Right, tt.right)
+	}
+}
+
 func TestListExpression(t *testing.T) {
 	input := "[0, 'one', true];"
 
@@ -453,10 +491,10 @@ func TestUnaryExpression(t *testing.T) {
 	}
 	ne, ok := ue.Right.(*object.NumberExpr)
 	if !ok {
-		t.Fatalf("Right value wrong type. expected=*object.BooleanExpr, got=%T", ue.Right)
+		t.Fatalf("Right value wrong type. expected=*object.NumberExpr, got=%T", ue.Right)
 	}
 	if ne.Int != 1 {
-		t.Errorf("Right value incorrect type. expected=%t, got=%t", true, ne.Int)
+		t.Errorf("Right value incorrect type. expected=%d, got=%d", 1, ne.Int)
 	}
 
 	s = stmts[2].(*object.ExpressionStmt)
@@ -495,10 +533,10 @@ func TestUnaryExpression(t *testing.T) {
 	}
 	ne, ok = ue.Right.(*object.NumberExpr)
 	if !ok {
-		t.Fatalf("Right value wrong type. expected=*object.BooleanExpr, got=%T", ue.Right)
+		t.Fatalf("Right value wrong type. expected=*object.NumberExpr, got=%T", ue.Right)
 	}
 	if ne.Int != 10 {
-		t.Errorf("Right value incorrect type. expected=%t, got=%t", true, ne.Int)
+		t.Errorf("Right value incorrect type. expected=%d, got=%d", 10, ne.Int)
 	}
 
 	s = stmts[4].(*object.ExpressionStmt)
@@ -512,7 +550,7 @@ func TestUnaryExpression(t *testing.T) {
 	}
 	ne, ok = ue.Right.(*object.NumberExpr)
 	if !ok {
-		t.Fatalf("Right value wrong type. expected=*object.BooleanExpr, got=%T", ue.Right)
+		t.Fatalf("Right value wrong type. expected=*object.NumberExpr, got=%T", ue.Right)
 	}
 	if ne.Float != 2.25 {
 		t.Errorf("Right value incorrect type. expected=%v, got=%v", 2.25, ne.Float)
