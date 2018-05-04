@@ -8,3 +8,7 @@ type Object interface {
 	Type() Type
 	String() string
 }
+
+const (
+	Printer Type = iota
+)
