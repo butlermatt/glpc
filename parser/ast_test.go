@@ -24,7 +24,7 @@ func (p *AstPrinter) Print(expr object.Expr) string {
 }
 
 func (p *AstPrinter) VisitAssignExpr(expr *object.AssignExpr) (object.Object, error) {
-	return p.parenthesize(expr.Name.Lexeme, expr.Value), nil
+	return p.parenthesize("= "+expr.Name.Lexeme, expr.Value), nil
 }
 func (p *AstPrinter) VisitBinaryExpr(expr *object.BinaryExpr) (object.Object, error) {
 	return p.parenthesize(expr.Operator.Lexeme, expr.Left, expr.Right), nil
@@ -64,6 +64,10 @@ func (p *AstPrinter) VisitListExpr(expr *object.ListExpr) (object.Object, error)
 	b.WriteByte(']')
 	return printerObj{value: b.String()}, nil
 }
+func (p *AstPrinter) VisitLogicalExpr(expr *object.LogicalExpr) (object.Object, error) {
+	return p.parenthesize(expr.Operator.Lexeme, expr.Left, expr.Right), nil
+}
+
 func (p *AstPrinter) VisitNullExpr(expr *object.NullExpr) (object.Object, error) {
 	return printerObj{"null"}, nil
 }
@@ -101,6 +105,13 @@ func TestASTGrouping(t *testing.T) {
 		{"4 + 5 + 6;", "(+ (+ 4 5) 6)"},
 		{"-a * b;", "(* (- a) b)"},
 		{"a + b * c;", "(+ a (* b c))"},
+		{"a * b + c;", "(+ (* a b) c)"},
+		{"(a + b) * c;", "(* (group (+ a b)) c)"},
+		{"a + b * c + d / e - f;", "(- (+ (+ a (* b c)) (/ d e)) f)"},
+		{"5 == a;", "(== 5 a)"},
+		{"3 + 4 * 5 == 3 * 1 + 4 * 5;", "(== (+ 3 (* 4 5)) (+ (* 3 1) (* 4 5)))"},
+		{"a += b;", "(= a (+ a b))"},
+		{"true or false;", "(or true false)"},
 	}
 
 	for i, tt := range tests {
@@ -109,7 +120,8 @@ func TestASTGrouping(t *testing.T) {
 		stmts := p.Parse()
 
 		if len(p.Errors()) != 0 {
-			t.Fatalf("test %d Parser encountered errors: %v", i+1, p.Errors())
+			t.Errorf("test %d Parser encountered errors: %v", i+1, p.Errors())
+			t.Fatalf("Test line was: %s", tt.input)
 		}
 
 		s := stmts[0].(*object.ExpressionStmt)

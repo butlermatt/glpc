@@ -159,7 +159,7 @@ func (p *Parser) expression() object.Expr {
 }
 
 func (p *Parser) assignment() object.Expr {
-	expr := p.equality()
+	expr := p.or()
 
 	if p.match(lexer.Equal) {
 		equals := p.prevTok
@@ -202,6 +202,30 @@ func (p *Parser) assignment() object.Expr {
 		case *object.VariableExpr:
 			return &object.AssignExpr{Name: e.Name, Value: be}
 		}
+	}
+
+	return expr
+}
+
+func (p *Parser) or() object.Expr {
+	expr := p.and()
+
+	for p.match(lexer.Or) {
+		oper := p.prevTok
+		right := p.and()
+		expr = &object.LogicalExpr{Left: expr, Operator: oper, Right: right}
+	}
+
+	return expr
+}
+
+func (p *Parser) and() object.Expr {
+	expr := p.equality()
+
+	for p.match(lexer.And) {
+		oper := p.prevTok
+		right := p.equality()
+		expr = &object.LogicalExpr{Left: expr, Operator: oper, Right: right}
 	}
 
 	return expr

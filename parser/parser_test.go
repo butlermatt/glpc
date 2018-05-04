@@ -259,6 +259,38 @@ func TestListExpression(t *testing.T) {
 	testBooleanLiteral(t, list.Values[2], true)
 }
 
+func TestLogicalExpressions(t *testing.T) {
+	tests := []struct{
+		input string
+		left  interface{}
+		oper  string
+		right interface{}
+	}{
+		{"true and true;", true, "and", true},
+		{"true or false;", true, "or", false},
+	}
+
+	for i, tt := range tests {
+		l := lexer.New([]byte(tt.input), "testfile.gpc")
+		p := New(l)
+		stmts := p.Parse()
+		checkParseErrors(t, p)
+
+		if len(stmts) != 1 {
+			t.Errorf("on test %d: incorrect number of statements. expected=1, got=%d", i + 1, len(stmts))
+			continue
+		}
+
+		s, ok := stmts[0].(*object.ExpressionStmt)
+		if !ok {
+			t.Errorf("on test %d: Statement wrong type. expected=*object.ExpressionStmt, got=%T", i + 1, stmts[0])
+			continue
+		}
+
+		testLogicalExpression(t, s.Expression, tt.left, tt.oper, tt.right)
+	}
+}
+
 func TestNumberLiteralExpression(t *testing.T) {
 	tests := []struct {
 		input string
@@ -540,6 +572,29 @@ func testLiteralExpression(t *testing.T, expr object.Expr, expected interface{})
 
 func testBinaryExpression(t *testing.T, expr object.Expr, left interface{}, oper string, right interface{}) bool {
 	be, ok := expr.(*object.BinaryExpr)
+	if !ok {
+		t.Errorf("expr is wrong type. expected=*object.BinaryExpr, got=%T", expr)
+		return false
+	}
+
+	if !testLiteralExpression(t, be.Left, left) {
+		return false
+	}
+
+	if be.Operator.Lexeme != oper {
+		t.Errorf("Operator incorrect. expected=%q, got=%q", oper, be.Operator.Lexeme)
+		return false
+	}
+
+	if !testLiteralExpression(t, be.Right, right) {
+		return false
+	}
+
+	return true
+}
+
+func testLogicalExpression(t *testing.T, expr object.Expr, left interface{}, oper string, right interface{}) bool {
+	be, ok := expr.(*object.LogicalExpr)
 	if !ok {
 		t.Errorf("expr is wrong type. expected=*object.BinaryExpr, got=%T", expr)
 		return false
