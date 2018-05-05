@@ -56,7 +56,6 @@ const (
 
 	TildSlashEq TokenType = "~/="
 
-
 	// Literals
 	Ident     TokenType = "IDENT"
 	String    TokenType = "STRING"
@@ -70,6 +69,7 @@ const (
 	Break    TokenType = "BREAK"
 	Class    TokenType = "CLASS"
 	Continue TokenType = "CONTINUE"
+	Do       TokenType = "DO"
 	Else     TokenType = "ELSE"
 	False    TokenType = "FALSE"
 	Fn       TokenType = "FN"
@@ -94,6 +94,7 @@ var keywords = map[string]TokenType{
 	"break":    Break,
 	"class":    Class,
 	"continue": Continue,
+	"do":       Do,
 	"else":     Else,
 	"false":    False,
 	"fn":       Fn,

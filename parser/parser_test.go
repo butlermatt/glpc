@@ -157,6 +157,55 @@ func TestForStatement(t *testing.T) {
 	testBinaryExpression(t, ae.Value, "i", "+", 1)
 }
 
+func TestDoWhileStatement(t *testing.T) {
+	input := `do {
+  error += "Hello";
+  Another = good;
+} while(i < 10);`
+
+	l := lexer.New([]byte(input), "testfile.gpc")
+	p := New(l)
+	stmts := p.Parse()
+	checkParseErrors(t, p)
+
+	if len(stmts) != 1 {
+		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	block, ok := stmts[0].(*object.BlockStmt)
+	if !ok {
+		t.Fatalf("statement wrong type. expected=*object.BlockStmt, got=%T", stmts[0])
+	}
+
+	if len(block.Statements) != 2 {
+		t.Fatalf("wrong number of statements. expected=%d, got=%d", 2, len(block.Statements))
+	}
+
+	fs, ok := block.Statements[1].(*object.ForStmt)
+	if !ok {
+		t.Fatalf("statement wrong type. expected=*object.ForStmt, got=%T", stmts[0])
+	}
+
+	if fs.Initializer != nil {
+		t.Errorf("Inititalizer wrong value. expected=<nil> got=%T", fs.Initializer)
+	}
+
+	testBinaryExpression(t, fs.Condition, "i", "<", 10)
+
+	bl, ok := fs.Body.(*object.BlockStmt)
+	if !ok {
+		t.Fatalf("body wrong type. expected=*object.BlockStmt, got=%T", fs.Body)
+	}
+
+	if len(bl.Statements) != 2 {
+		t.Errorf("wrong number of statements in body. expected=%d, got=%d", 2, len(bl.Statements))
+	}
+
+	if fs.Increment != nil {
+		t.Errorf("Increment wrong type. expected=<nil>, got=%T", fs.Increment)
+	}
+}
+
 func TestWhileStatement(t *testing.T) {
 	input := `while(i < 10) {
   error += "Hello";

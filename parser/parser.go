@@ -140,6 +140,8 @@ func (p *Parser) varDeclaration() object.Stmt {
 
 func (p *Parser) statement() object.Stmt {
 	switch {
+	case p.match(lexer.Do):
+		return p.doWhileStatement()
 	case p.match(lexer.LBrace):
 		return &object.BlockStmt{Statements: p.block()}
 	case p.match(lexer.For):
@@ -152,6 +154,29 @@ func (p *Parser) statement() object.Stmt {
 	}
 
 	return p.expressionStatement()
+}
+
+func (p *Parser) doWhileStatement() object.Stmt {
+	body := p.statement()
+
+	if !p.consume(lexer.While, "Expect 'while' after do-while body") {
+		return nil
+	}
+
+	if !p.consume(lexer.LParen, "Expect '(' after 'while'.") {
+		return nil
+	}
+
+	cond := p.expression()
+	if !p.consume(lexer.RParen, "Expect ')' after while condition.") {
+		return nil
+	}
+	if !p.consume(lexer.Semicolon, "Expect ';' after ')'.") {
+		return nil
+	}
+
+	stmts := []object.Stmt{body, &object.ForStmt{Condition: cond, Body: body}}
+	return &object.BlockStmt{Statements: stmts}
 }
 
 func (p *Parser) block() []object.Stmt {

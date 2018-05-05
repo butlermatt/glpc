@@ -51,7 +51,7 @@ func TestLexer_NextToken(t *testing.T) {
 fn something true false
 if and or else for while
 class null this super return;
-break continue
+do break continue
 = +=-=%=*= /= ~/=
 `
 
@@ -94,6 +94,7 @@ break continue
 		{Super, "super", 15},
 		{Return, "return", 15},
 		{Semicolon, ";", 15},
+		{Do, "do", 16},
 		{Break, "break", 16},
 		{Continue, "continue", 16},
 		{Equal, "=", 17},

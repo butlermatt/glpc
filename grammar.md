@@ -22,6 +22,7 @@ varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 
 ```glpc
 statement      → exprStmt
+               | doWhileStmt
                | forStmt
                | ifStmt
                | printStmt
@@ -30,6 +31,7 @@ statement      → exprStmt
                | block ;
 
 exprStmt       → expression ";" ;
+doWhileStmt    → "do" statement "while" "(" expression ")" ";" ;
 forStmt        → "for" "(" ( varDecl | exprStmt )
                  expression? ";" expression? ")" statement ;
 ifStmt         → "if" "(" expression ")" statement ( "else" statement )? ;
