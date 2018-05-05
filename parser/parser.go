@@ -140,10 +140,33 @@ func (p *Parser) varDeclaration() object.Stmt {
 
 func (p *Parser) statement() object.Stmt {
 	switch {
-	// TODO: Cases for break, continue, If, Print, Return, While, For, and LBrace
+	case p.match(lexer.If):
+		return p.ifStatement()
+		// TODO: Cases for break, continue, If, Print, Return, While, For, and LBrace
 	}
 
 	return p.expressionStatement()
+}
+
+func (p *Parser) ifStatement() object.Stmt {
+	if !p.consume(lexer.LParen, "Expect '(' after 'if'.") {
+		return nil
+	}
+
+	cond := p.expression()
+
+	if !p.consume(lexer.RParen, "Expect ')' after if condition.") {
+		return nil
+	}
+
+	thenBranch := p.statement()
+	var elseBranch object.Stmt
+
+	if p.match(lexer.Else) {
+		elseBranch = p.statement()
+	}
+
+	return &object.IfStmt{Condition: cond, Then: thenBranch, Else: elseBranch}
 }
 
 func (p *Parser) expressionStatement() object.Stmt {

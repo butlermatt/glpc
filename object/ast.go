@@ -149,6 +149,16 @@ type ExpressionStmt struct {
 // Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
 func (e *ExpressionStmt) Accept(visitor StmtVisitor) error { return visitor.VisitExpressionStmt(e) }
 
+// IfStmt is a Stmt of a If
+type IfStmt struct {
+	Condition Expr
+	Then      Stmt
+	Else      Stmt
+}
+
+// Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
+func (i *IfStmt) Accept(visitor StmtVisitor) error { return visitor.VisitIfStmt(i) }
+
 // VarStmt is a Stmt of a Var
 type VarStmt struct {
 	Name  *lexer.Token
@@ -161,5 +171,6 @@ func (v *VarStmt) Accept(visitor StmtVisitor) error { return visitor.VisitVarStm
 // StmtVisitor will visit Stmt objects and must receive calls to their applicable methods.
 type StmtVisitor interface {
 	VisitExpressionStmt(stmt *ExpressionStmt) error
+	VisitIfStmt(stmt *IfStmt) error
 	VisitVarStmt(stmt *VarStmt) error
 }

@@ -7,6 +7,51 @@ import (
 	"github.com/butlermatt/glpc/object"
 )
 
+func TestIfStatement(t *testing.T) {
+	input := `if (a == 1) 
+  x = true;
+else
+  y = false;
+`
+
+	l := lexer.New([]byte(input), "testfile.gpc")
+	p := New(l)
+	stmts := p.Parse()
+	checkParseErrors(t, p)
+
+	if len(stmts) != 1 {
+		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	ifStmt, ok := stmts[0].(*object.IfStmt)
+	if !ok {
+		t.Fatalf("Statement wrong type. expected=*object.IfStmt, got=%T", stmts[0])
+	}
+
+	testBinaryExpression(t, ifStmt.Condition, "a", "==", 1)
+
+	es := ifStmt.Then.(*object.ExpressionStmt)
+	ae := es.Expression.(*object.AssignExpr)
+	if ae.Name.Lexeme != "x" {
+		t.Errorf("wrong then branch. name expectd=%q, got=%q", "x", ae.Name.Lexeme)
+	}
+	be := ae.Value.(*object.BooleanExpr)
+	if be.Value != true {
+		t.Errorf("wrong value assigned. expected=%t, got=%t", true, be.Value)
+	}
+
+	es = ifStmt.Else.(*object.ExpressionStmt)
+	ae = es.Expression.(*object.AssignExpr)
+	if ae.Name.Lexeme != "y" {
+		t.Errorf("wrong else branch. name expected=%q, got=%q", "y", ae.Name.Lexeme)
+	}
+
+	be = ae.Value.(*object.BooleanExpr)
+	if be.Value != false {
+		t.Errorf("wrong value assigned. expected=%t, got=%t", false, be.Value)
+	}
+}
+
 func TestVarStatement(t *testing.T) {
 	tests := []struct {
 		input string
@@ -82,14 +127,14 @@ func TestAssignExpression(t *testing.T) {
 
 func TestCompoundAssignExpressions(t *testing.T) {
 	type bin struct {
-		left string
-		oper string
+		left  string
+		oper  string
 		value interface{}
 	}
 
-	tests := []struct{
+	tests := []struct {
 		input string
-		name string
+		name  string
 		value bin
 	}{
 		{"x += 1;", "x", bin{"x", "+", 1}},
@@ -107,7 +152,7 @@ func TestCompoundAssignExpressions(t *testing.T) {
 		checkParseErrors(t, p)
 
 		if len(stmts) != 1 {
-			t.Errorf("test %d: incorrect statements length. expected=%d, got=%d", i + 1, 1, len(stmts))
+			t.Errorf("test %d: incorrect statements length. expected=%d, got=%d", i+1, 1, len(stmts))
 			continue
 		}
 
@@ -134,7 +179,7 @@ func TestCompoundAssignExpressions(t *testing.T) {
 }
 
 func TestBinaryExpressions(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		input string
 		left  interface{}
 		oper  string
@@ -162,20 +207,19 @@ func TestBinaryExpressions(t *testing.T) {
 		checkParseErrors(t, p)
 
 		if len(stmts) != 1 {
-			t.Errorf("on test %d: incorrect number of statements. expected=1, got=%d", i + 1, len(stmts))
+			t.Errorf("on test %d: incorrect number of statements. expected=1, got=%d", i+1, len(stmts))
 			continue
 		}
 
 		s, ok := stmts[0].(*object.ExpressionStmt)
 		if !ok {
-			t.Errorf("on test %d: Statement wrong type. expected=*object.ExpressionStmt, got=%T", i + 1, stmts[0])
+			t.Errorf("on test %d: Statement wrong type. expected=*object.ExpressionStmt, got=%T", i+1, stmts[0])
 			continue
 		}
 
 		testBinaryExpression(t, s.Expression, tt.left, tt.oper, tt.right)
 	}
 }
-
 
 func TestBooleanLiteralExpression(t *testing.T) {
 	tests := []struct {
@@ -232,7 +276,7 @@ func TestGroupingExpression(t *testing.T) {
 }
 
 func TestIndexExpressions(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		input string
 		left  interface{}
 		right interface{}
@@ -248,13 +292,13 @@ func TestIndexExpressions(t *testing.T) {
 		checkParseErrors(t, p)
 
 		if len(stmts) != 1 {
-			t.Errorf("on test %d: incorrect number of statements. expected=1, got=%d", i + 1, len(stmts))
+			t.Errorf("on test %d: incorrect number of statements. expected=1, got=%d", i+1, len(stmts))
 			continue
 		}
 
 		s, ok := stmts[0].(*object.ExpressionStmt)
 		if !ok {
-			t.Errorf("on test %d: Statement wrong type. expected=*object.ExpressionStmt, got=%T", i + 1, stmts[0])
+			t.Errorf("on test %d: Statement wrong type. expected=*object.ExpressionStmt, got=%T", i+1, stmts[0])
 			continue
 		}
 
@@ -298,7 +342,7 @@ func TestListExpression(t *testing.T) {
 }
 
 func TestLogicalExpressions(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		input string
 		left  interface{}
 		oper  string
@@ -315,13 +359,13 @@ func TestLogicalExpressions(t *testing.T) {
 		checkParseErrors(t, p)
 
 		if len(stmts) != 1 {
-			t.Errorf("on test %d: incorrect number of statements. expected=1, got=%d", i + 1, len(stmts))
+			t.Errorf("on test %d: incorrect number of statements. expected=1, got=%d", i+1, len(stmts))
 			continue
 		}
 
 		s, ok := stmts[0].(*object.ExpressionStmt)
 		if !ok {
-			t.Errorf("on test %d: Statement wrong type. expected=*object.ExpressionStmt, got=%T", i + 1, stmts[0])
+			t.Errorf("on test %d: Statement wrong type. expected=*object.ExpressionStmt, got=%T", i+1, stmts[0])
 			continue
 		}
 
@@ -634,7 +678,7 @@ func testBinaryExpression(t *testing.T, expr object.Expr, left interface{}, oper
 func testLogicalExpression(t *testing.T, expr object.Expr, left interface{}, oper string, right interface{}) bool {
 	be, ok := expr.(*object.LogicalExpr)
 	if !ok {
-		t.Errorf("expr is wrong type. expected=*object.BinaryExpr, got=%T", expr)
+		t.Errorf("expr is wrong type. expected=*object.Logical, got=%T", expr)
 		return false
 	}
 
