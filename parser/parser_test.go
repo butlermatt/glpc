@@ -7,6 +7,61 @@ import (
 	"github.com/butlermatt/glpc/object"
 )
 
+func TestBlockStatement(t *testing.T) {
+	input := `{
+  var x = 1;
+  x += 1;
+  if (x == 2) {
+    count + 2;
+    count - 2;
+  } else {
+    error = "Oh oh";
+    error += "broken";
+  }
+}`
+
+	l := lexer.New([]byte(input), "testfile.gpc")
+	p := New(l)
+	stmts := p.Parse()
+	checkParseErrors(t, p)
+
+	if len(stmts) != 1 {
+		t.Fatalf("unexpected number of program statements. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	bs, ok := stmts[0].(*object.BlockStmt)
+	if !ok {
+		t.Fatalf("unexpected statement type. expected=*object.BlockStmt, got=%T", stmts[0])
+	}
+
+	if len(bs.Statements) != 3 {
+		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 3, len(bs.Statements))
+	}
+
+	ifstmt, ok := bs.Statements[2].(*object.IfStmt)
+	if !ok {
+		t.Fatalf("3rd statement wrong type. expected=*object.IfStmt, got=%T", bs.Statements[2])
+	}
+
+	bs, ok = ifstmt.Then.(*object.BlockStmt)
+	if !ok {
+		t.Fatalf("incorrect statement type. expected=*object.BlockStmt, got=%T", ifstmt.Then)
+	}
+
+	if len(bs.Statements) != 2 {
+		t.Errorf("incorrect number of statements. expected=%d, got=%d", 2, len(bs.Statements))
+	}
+
+	bs, ok = ifstmt.Else.(*object.BlockStmt)
+	if !ok {
+		t.Fatalf("incorrect statement type. expected=*object.BlockStmt, got=%T", ifstmt.Then)
+	}
+
+	if len(bs.Statements) != 2 {
+		t.Errorf("incorrect number of statements. expected=%d, got=%d", 2, len(bs.Statements))
+	}
+}
+
 func TestIfStatement(t *testing.T) {
 	input := `if (a == 1) 
   x = true;

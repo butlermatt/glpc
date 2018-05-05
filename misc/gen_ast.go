@@ -30,6 +30,7 @@ func main() {
 	}
 
 	statements := []string{
+		"Block      : Statements []Stmt",
 		"Expression : Expression Expr",
 		"If         : Condition Expr, Then Stmt, Else Stmt",
 		"Var        : Name *lexer.Token, Value Expr",

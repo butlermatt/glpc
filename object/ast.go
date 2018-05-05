@@ -141,6 +141,14 @@ type ExprVisitor interface {
 	VisitVariableExpr(expr *VariableExpr) (Object, error)
 }
 
+// BlockStmt is a Stmt of a Block
+type BlockStmt struct {
+	Statements []Stmt
+}
+
+// Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
+func (b *BlockStmt) Accept(visitor StmtVisitor) error { return visitor.VisitBlockStmt(b) }
+
 // ExpressionStmt is a Stmt of a Expression
 type ExpressionStmt struct {
 	Expression Expr
@@ -170,6 +178,7 @@ func (v *VarStmt) Accept(visitor StmtVisitor) error { return visitor.VisitVarStm
 
 // StmtVisitor will visit Stmt objects and must receive calls to their applicable methods.
 type StmtVisitor interface {
+	VisitBlockStmt(stmt *BlockStmt) error
 	VisitExpressionStmt(stmt *ExpressionStmt) error
 	VisitIfStmt(stmt *IfStmt) error
 	VisitVarStmt(stmt *VarStmt) error

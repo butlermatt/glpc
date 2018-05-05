@@ -140,12 +140,28 @@ func (p *Parser) varDeclaration() object.Stmt {
 
 func (p *Parser) statement() object.Stmt {
 	switch {
+	case p.match(lexer.LBrace):
+		return &object.BlockStmt{Statements: p.block()}
 	case p.match(lexer.If):
 		return p.ifStatement()
 		// TODO: Cases for break, continue, If, Print, Return, While, For, and LBrace
 	}
 
 	return p.expressionStatement()
+}
+
+func (p *Parser) block() []object.Stmt {
+	var stmts []object.Stmt
+
+	for !p.check(lexer.RBrace) && p.curTok.Type != lexer.EOF {
+		s := p.declaration()
+		if s != nil {
+			stmts = append(stmts, s)
+		}
+	}
+
+	p.consume(lexer.RBrace, "Expect '}' after block.")
+	return stmts
 }
 
 func (p *Parser) ifStatement() object.Stmt {
