@@ -146,6 +146,8 @@ func (p *Parser) statement() object.Stmt {
 		return p.forStatement()
 	case p.match(lexer.If):
 		return p.ifStatement()
+	case p.match(lexer.While):
+		return p.whileStatement()
 		// TODO: Cases for break, continue, If, Print, Return, While, For, and LBrace
 	}
 
@@ -220,6 +222,21 @@ func (p *Parser) ifStatement() object.Stmt {
 	}
 
 	return &object.IfStmt{Condition: cond, Then: thenBranch, Else: elseBranch}
+}
+
+func (p *Parser) whileStatement() object.Stmt {
+	if !p.consume(lexer.LParen, "Expect '(' after 'while'.") {
+		return nil
+	}
+
+	cond := p.expression()
+	if !p.consume(lexer.RParen, "Expect ')' after while condition") {
+		return nil
+	}
+
+	body := p.statement()
+
+	return &object.ForStmt{Condition: cond, Body: body}
 }
 
 func (p *Parser) expressionStatement() object.Stmt {
