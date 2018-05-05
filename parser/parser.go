@@ -159,7 +159,7 @@ func (p *Parser) statement() object.Stmt {
 func (p *Parser) doWhileStatement() object.Stmt {
 	body := p.statement()
 
-	if !p.consume(lexer.While, "Expect 'while' after do-while body") {
+	if !p.consume(lexer.While, "Expect 'while' after do-while body.") {
 		return nil
 	}
 
@@ -211,7 +211,7 @@ func (p *Parser) forStatement() object.Stmt {
 	if !p.check(lexer.Semicolon) {
 		cond = p.expression()
 	}
-	if !p.consume(lexer.Semicolon, "Expect ';' after loop condition") {
+	if !p.consume(lexer.Semicolon, "Expect ';' after loop condition.") {
 		return nil
 	}
 
@@ -255,7 +255,7 @@ func (p *Parser) whileStatement() object.Stmt {
 	}
 
 	cond := p.expression()
-	if !p.consume(lexer.RParen, "Expect ')' after while condition") {
+	if !p.consume(lexer.RParen, "Expect ')' after while condition.") {
 		return nil
 	}
 

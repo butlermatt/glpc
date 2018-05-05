@@ -642,6 +642,20 @@ func TestParserErrors(t *testing.T) {
 		{"var ;", 1, ";", "Expect variable name."},
 		{"var x", 1, "at end", "Expect ';' after variable declaration."},
 		{"x = true", 1, "at end", "Expect ';' after value."},
+		{"x[2", 2, "at end", "Expect ']' after index."},
+		{"if y x = 7;", 1, "y", "Expect '(' after 'if'."},
+		{"{ x = 2;", 1, "at end", "Expect '}' after block."},
+		{"for x = 2;", 1, "x", "Expect '(' after 'for'."},
+		{"for (;)", 2, ")", "Expect expression."},
+		{"for (; x < 2)", 1, ")", "Expect ';' after loop condition."},
+		{"for (; x < 2;", 2, "at end", "Expect expression."},
+		{"for (; x < 2; x += 2 {}", 1, "{", "Expect ')' after for clauses."},
+		{"while true { }", 1, "true", "Expect '(' after 'while'."},
+		{"while (true { }", 1, "{", "Expect ')' after while condition."},
+		{"do {} ;", 1, ";", "Expect 'while' after do-while body."},
+		{"do {} while;", 1, ";", "Expect '(' after 'while'."},
+		{"do {} while(x == 2;", 1, ";", "Expect ')' after while condition."},
+		{"do {} while(x == 2)", 1, "at end", "Expect ';' after ')'."},
 	}
 
 	for i, tt := range tests {
@@ -1017,7 +1031,7 @@ func testParseErrors(t *testing.T, p *Parser, numErrs int, where, msg string) bo
 	errs := p.Errors()
 	// 2 because of Unterminated string, then missing semicolon
 	if len(errs) != numErrs {
-		t.Errorf("wrong number of errors. expected=1, got=%d", len(errs))
+		t.Errorf("wrong number of errors. expected=%d, got=%d", numErrs, len(errs))
 		return false
 	}
 
