@@ -142,6 +142,8 @@ func (p *Parser) statement() object.Stmt {
 	switch {
 	case p.match(lexer.LBrace):
 		return &object.BlockStmt{Statements: p.block()}
+	case p.match(lexer.For):
+		return p.forStatement()
 	case p.match(lexer.If):
 		return p.ifStatement()
 		// TODO: Cases for break, continue, If, Print, Return, While, For, and LBrace
@@ -162,6 +164,41 @@ func (p *Parser) block() []object.Stmt {
 
 	p.consume(lexer.RBrace, "Expect '}' after block.")
 	return stmts
+}
+
+func (p *Parser) forStatement() object.Stmt {
+	if !p.consume(lexer.LParen, "Expect '(' after 'for'.") {
+		return nil
+	}
+
+	var init object.Stmt
+	if p.match(lexer.Semicolon) {
+		init = nil
+	} else if p.match(lexer.Var) {
+		init = p.varDeclaration()
+	} else {
+		init = p.expressionStatement()
+	}
+
+	var cond object.Expr
+	if !p.check(lexer.Semicolon) {
+		cond = p.expression()
+	}
+	if !p.consume(lexer.Semicolon, "Expect ';' after loop condition") {
+		return nil
+	}
+
+	var increment object.Expr
+	if !p.check(lexer.RParen) {
+		increment = p.expression()
+	}
+	if !p.consume(lexer.RParen, "Expect ')' after for clauses.") {
+		return nil
+	}
+
+	body := p.statement()
+
+	return &object.ForStmt{Initializer: init, Condition: cond, Body: body, Increment: increment}
 }
 
 func (p *Parser) ifStatement() object.Stmt {

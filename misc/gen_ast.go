@@ -33,6 +33,7 @@ func main() {
 		"Block      : Statements []Stmt",
 		"Expression : Expression Expr",
 		"If         : Condition Expr, Then Stmt, Else Stmt",
+		"For        : Initializer Stmt, Condition Expr, Body Stmt, Increment Expr",
 		"Var        : Name *lexer.Token, Value Expr",
 	}
 

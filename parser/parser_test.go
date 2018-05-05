@@ -107,6 +107,56 @@ else
 	}
 }
 
+func TestForStatement(t *testing.T) {
+	input := `for (var i = 0; i < 10; i += 1) {
+  error += "Hello";
+  Another = good;
+}`
+
+	l := lexer.New([]byte(input), "testfile.gpc")
+	p := New(l)
+	stmts := p.Parse()
+	checkParseErrors(t, p)
+
+	if len(stmts) != 1 {
+		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	fs, ok := stmts[0].(*object.ForStmt)
+	if !ok {
+		t.Fatalf("statement wrong type. expected=*object.ForStmt, got=%T", stmts[0])
+	}
+
+	is, ok := fs.Initializer.(*object.VarStmt)
+	if !ok {
+		t.Fatalf("Initializer incorrect type. expected=*object.VarStmt, got=%T", fs.Initializer)
+	}
+
+	testVariable(t, is, "i")
+	testNumberLiteral(t, is.Value, 0)
+	testBinaryExpression(t, fs.Condition, "i", "<", 10)
+
+	bl, ok := fs.Body.(*object.BlockStmt)
+	if !ok {
+		t.Fatalf("body wrong type. expected=*object.BlockStmt, got=%T", fs.Body)
+	}
+
+	if len(bl.Statements) != 2 {
+		t.Errorf("wrong number of statements in body. expected=%d, got=%d", 2, len(bl.Statements))
+	}
+
+	ae, ok := fs.Increment.(*object.AssignExpr)
+	if !ok {
+		t.Fatalf("Increment wrong type. expected=*object.AssignExpr, got=%T", fs.Increment)
+	}
+
+	if ae.Name.Lexeme != "i" {
+		t.Errorf("initializer name incorrect. expected=%q, got=%q", "i", ae.Name.Lexeme)
+	}
+
+	testBinaryExpression(t, ae.Value, "i", "+", 1)
+}
+
 func TestVarStatement(t *testing.T) {
 	tests := []struct {
 		input string
