@@ -173,6 +173,16 @@ type ExpressionStmt struct {
 // Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
 func (e *ExpressionStmt) Accept(visitor StmtVisitor) error { return visitor.VisitExpressionStmt(e) }
 
+// FunctionStmt is a Stmt of a Function
+type FunctionStmt struct {
+	Name       *lexer.Token
+	Parameters []*lexer.Token
+	Body       []Stmt
+}
+
+// Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
+func (f *FunctionStmt) Accept(visitor StmtVisitor) error { return visitor.VisitFunctionStmt(f) }
+
 // IfStmt is a Stmt of a If
 type IfStmt struct {
 	Condition Expr
@@ -209,6 +219,7 @@ type StmtVisitor interface {
 	VisitBreakStmt(stmt *BreakStmt) error
 	VisitContinueStmt(stmt *ContinueStmt) error
 	VisitExpressionStmt(stmt *ExpressionStmt) error
+	VisitFunctionStmt(stmt *FunctionStmt) error
 	VisitIfStmt(stmt *IfStmt) error
 	VisitForStmt(stmt *ForStmt) error
 	VisitVarStmt(stmt *VarStmt) error

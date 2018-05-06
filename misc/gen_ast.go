@@ -34,6 +34,7 @@ func main() {
 		"Break      : Keyword *lexer.Token",
 		"Continue   : Keyword *lexer.Token",
 		"Expression : Expression Expr",
+		"Function   : Name *lexer.Token, Parameters []*lexer.Token, Body []Stmt",
 		"If         : Condition Expr, Then Stmt, Else Stmt",
 		"For        : Initializer Stmt, Condition Expr, Body Stmt, Increment Expr",
 		"Var        : Name *lexer.Token, Value Expr",

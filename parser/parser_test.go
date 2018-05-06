@@ -159,6 +159,80 @@ else
 	}
 }
 
+func TestFunctions(t *testing.T) {
+	input := `fn test(x, y) { var temp = x; x = y; y = temp; }`
+
+	l := lexer.New([]byte(input), "testfile.gpc")
+	p := New(l)
+	stmts := p.Parse()
+	checkParseErrors(t, p)
+
+	if len(stmts) != 1 {
+		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	fn, ok := stmts[0].(*object.FunctionStmt)
+	if !ok {
+		t.Fatalf("statement wrong type. expected=*object.FunctionStmt, got=%T", stmts[0])
+	}
+
+	if fn.Name.Lexeme != "test" {
+		t.Errorf("wrong function name. expected=%q, got=%q", "test", fn.Name.Lexeme)
+	}
+
+	if len(fn.Parameters) != 2 {
+		t.Errorf("wrong number of parameters. expected=%d, got=%d", 2, len(fn.Parameters))
+	}
+
+	if fn.Parameters[0].Lexeme != "x" {
+		t.Errorf("wrong parameter name. expected=%q, got=%q", "x", fn.Parameters[0].Lexeme)
+	}
+
+	if fn.Parameters[1].Lexeme != "y" {
+		t.Errorf("wrong parameter name. expected=%q, got=%q", "y", fn.Parameters[1].Lexeme)
+	}
+
+	if len(fn.Body) != 3 {
+		t.Errorf("wrong number of body statements. expected=%d, got=%d", 3, len(fn.Body))
+	}
+
+	testVariable(t, fn.Body[0], "temp")
+	val := fn.Body[0].(*object.VarStmt)
+	testLiteralExpression(t, val.Value, "x")
+
+	es, ok := fn.Body[1].(*object.ExpressionStmt)
+	if !ok {
+		t.Fatalf("wrong type for statement 2. expected=*object.ExpressionStmt, got=%T", fn.Body[1])
+	}
+
+	ae, ok := es.Expression.(*object.AssignExpr)
+	if !ok {
+		t.Fatalf("expression is wrong type. expected=*object.AssignExpr, got=%T", es.Expression)
+	}
+
+	if ae.Name.Lexeme != "x" {
+		t.Errorf("name does not match. expected=%q, got=%q", "x", ae.Name.Lexeme)
+	}
+
+	testLiteralExpression(t, ae.Value, "y")
+
+	es, ok = fn.Body[2].(*object.ExpressionStmt)
+	if !ok {
+		t.Fatalf("wrong type for statement 2. expected=*object.ExpressionStmt, got=%T", fn.Body[2])
+	}
+
+	ae, ok = es.Expression.(*object.AssignExpr)
+	if !ok {
+		t.Fatalf("expression is wrong type. expected=*object.AssignExpr, got=%T", es.Expression)
+	}
+
+	if ae.Name.Lexeme != "y" {
+		t.Errorf("name does not match. expected=%q, got=%q", "y", ae.Name.Lexeme)
+	}
+
+	testLiteralExpression(t, ae.Value, "temp")
+}
+
 func TestForStatement(t *testing.T) {
 	input := `for (var i = 0; i < 10; i += 1) {
   error += "Hello";
@@ -697,6 +771,7 @@ func TestParserErrors(t *testing.T) {
 		{"x[2", 2, "at end", "Expect ']' after index."},
 		{"if y x = 7;", 1, "y", "Expect '(' after 'if'."},
 		{"{ x = 2;", 1, "at end", "Expect '}' after block."},
+
 		{"for x = 2;", 1, "x", "Expect '(' after 'for'."},
 		{"for (;)", 2, ")", "Expect expression."},
 		{"for (; x < 2)", 1, ")", "Expect ';' after loop condition."},
@@ -707,10 +782,19 @@ func TestParserErrors(t *testing.T) {
 		{"do {} ;", 1, ";", "Expect 'while' after do-while body."},
 		{"do {} while;", 1, ";", "Expect '(' after 'while'."},
 		{"do {} while(x == 2;", 1, ";", "Expect ')' after while condition."},
+
 		{"do {} while(x == 2)", 1, "at end", "Expect ';' after ')'."},
 		{"while(true) { break }", 2, "}", "Expect ';' after 'break'."},
 		{"while(true) { continue }", 2, "}", "Expect ';' after 'continue'."},
 		// TODO: Break and Continue not in loop
+		{"fn(x, y) {}", 1, "(", "Expect function name."},
+		{"fn test {}", 1, "{", "Expect '(' after function name."},
+		{"fn test(7){}", 1, "7", "Expect parameter name."},
+		{"fn test(x, ){}", 1, ")", "Expect parameter name."},
+		//{"fn test(a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, b) {}", 1, "b", "Cannot have more than 32 parameters"},
+		{"fn test(a, b {}", 1, "{", "Expect ')' after parameters."},
+
+		{"fn test(a, b) x = 10; }", 3, "x", "Expect '{' before function body."},
 	}
 
 	for i, tt := range tests {

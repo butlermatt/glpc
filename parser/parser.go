@@ -107,6 +107,8 @@ func (p *Parser) declaration() object.Stmt {
 	var stmt object.Stmt
 
 	switch {
+	case p.match(lexer.Fn):
+		stmt = p.function("function")
 	case p.match(lexer.Var):
 		stmt = p.varDeclaration()
 	default:
@@ -120,6 +122,47 @@ func (p *Parser) declaration() object.Stmt {
 	}
 
 	return stmt
+}
+
+func (p *Parser) function(fnType string) object.Stmt {
+	if !p.consume(lexer.Ident, "Expect "+fnType+" name.") {
+		return nil
+	}
+
+	name := p.prevTok
+	if !p.consume(lexer.LParen, "Expect '(' after "+fnType+" name.") {
+		return nil
+	}
+
+	var params []*lexer.Token
+	if !p.check(lexer.RParen) {
+		if !p.consume(lexer.Ident, "Expect parameter name.") {
+			return nil
+		}
+
+		params = append(params, p.prevTok)
+		for p.match(lexer.Comma) {
+			if len(params) > 32 {
+				p.addError(p.curTok, "Cannot have more than 32 parameters.")
+			}
+			if !p.consume(lexer.Ident, "Expect parameter name.") {
+				return nil
+			}
+			params = append(params, p.prevTok)
+		}
+	}
+
+	if !p.consume(lexer.RParen, "Expect ')' after parameters.") {
+		return nil
+	}
+
+	if !p.consume(lexer.LBrace, "Expect '{' before "+fnType+" body.") {
+		return nil
+	}
+
+	body := p.block()
+	return &object.FunctionStmt{Name: name, Parameters: params, Body: body}
+
 }
 
 func (p *Parser) varDeclaration() object.Stmt {
