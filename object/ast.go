@@ -149,6 +149,22 @@ type BlockStmt struct {
 // Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
 func (b *BlockStmt) Accept(visitor StmtVisitor) error { return visitor.VisitBlockStmt(b) }
 
+// BreakStmt is a Stmt of a Break
+type BreakStmt struct {
+	Keyword *lexer.Token
+}
+
+// Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
+func (b *BreakStmt) Accept(visitor StmtVisitor) error { return visitor.VisitBreakStmt(b) }
+
+// ContinueStmt is a Stmt of a Continue
+type ContinueStmt struct {
+	Keyword *lexer.Token
+}
+
+// Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
+func (c *ContinueStmt) Accept(visitor StmtVisitor) error { return visitor.VisitContinueStmt(c) }
+
 // ExpressionStmt is a Stmt of a Expression
 type ExpressionStmt struct {
 	Expression Expr
@@ -190,6 +206,8 @@ func (v *VarStmt) Accept(visitor StmtVisitor) error { return visitor.VisitVarStm
 // StmtVisitor will visit Stmt objects and must receive calls to their applicable methods.
 type StmtVisitor interface {
 	VisitBlockStmt(stmt *BlockStmt) error
+	VisitBreakStmt(stmt *BreakStmt) error
+	VisitContinueStmt(stmt *ContinueStmt) error
 	VisitExpressionStmt(stmt *ExpressionStmt) error
 	VisitIfStmt(stmt *IfStmt) error
 	VisitForStmt(stmt *ForStmt) error

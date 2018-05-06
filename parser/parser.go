@@ -140,10 +140,14 @@ func (p *Parser) varDeclaration() object.Stmt {
 
 func (p *Parser) statement() object.Stmt {
 	switch {
-	case p.match(lexer.Do):
-		return p.doWhileStatement()
 	case p.match(lexer.LBrace):
 		return &object.BlockStmt{Statements: p.block()}
+	case p.match(lexer.Break):
+		return p.breakStatement()
+	case p.match(lexer.Continue):
+		return p.continueStatement()
+	case p.match(lexer.Do):
+		return p.doWhileStatement()
 	case p.match(lexer.For):
 		return p.forStatement()
 	case p.match(lexer.If):
@@ -154,6 +158,40 @@ func (p *Parser) statement() object.Stmt {
 	}
 
 	return p.expressionStatement()
+}
+
+func (p *Parser) block() []object.Stmt {
+	var stmts []object.Stmt
+
+	for !p.check(lexer.RBrace) && p.curTok.Type != lexer.EOF {
+		s := p.declaration()
+		if s != nil {
+			stmts = append(stmts, s)
+		}
+	}
+
+	p.consume(lexer.RBrace, "Expect '}' after block.")
+	return stmts
+}
+
+func (p *Parser) breakStatement() object.Stmt {
+	// TODO: add check for in loop and return error
+	keyword := p.prevTok
+	if !p.consume(lexer.Semicolon, "Expect ';' after 'break'.") {
+		return nil
+	}
+
+	return &object.BreakStmt{Keyword: keyword}
+}
+
+func (p *Parser) continueStatement() object.Stmt {
+	// TODO: add check for in loop and return error
+	keyword := p.prevTok
+	if !p.consume(lexer.Semicolon, "Expect ';' after 'continue'.") {
+		return nil
+	}
+
+	return &object.ContinueStmt{Keyword: keyword}
 }
 
 func (p *Parser) doWhileStatement() object.Stmt {
@@ -177,20 +215,6 @@ func (p *Parser) doWhileStatement() object.Stmt {
 
 	stmts := []object.Stmt{body, &object.ForStmt{Condition: cond, Body: body}}
 	return &object.BlockStmt{Statements: stmts}
-}
-
-func (p *Parser) block() []object.Stmt {
-	var stmts []object.Stmt
-
-	for !p.check(lexer.RBrace) && p.curTok.Type != lexer.EOF {
-		s := p.declaration()
-		if s != nil {
-			stmts = append(stmts, s)
-		}
-	}
-
-	p.consume(lexer.RBrace, "Expect '}' after block.")
-	return stmts
 }
 
 func (p *Parser) forStatement() object.Stmt {

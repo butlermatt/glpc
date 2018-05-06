@@ -62,6 +62,58 @@ func TestBlockStatement(t *testing.T) {
 	}
 }
 
+func TestBreakStatement(t *testing.T) {
+	input := `while (true) break;`
+	l := lexer.New([]byte(input), "testfile.gpc")
+	p := New(l)
+	stmts := p.Parse()
+	checkParseErrors(t, p)
+
+	if len(stmts) != 1 {
+		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	s, ok := stmts[0].(*object.ForStmt)
+	if !ok {
+		t.Fatalf("Statement wrong type. expected=*object.ForStmt, got=%T", stmts[0])
+	}
+
+	br, ok := s.Body.(*object.BreakStmt)
+	if !ok {
+		t.Fatalf("Body wrong type. expected=*object.BreakStmt, got=%T", s.Body)
+	}
+
+	if br.Keyword.Lexeme != "break" {
+		t.Fatalf("lexeme wrong value. expected=%q, got=%q", "break", br.Keyword.Lexeme)
+	}
+}
+
+func TestContinueStatement(t *testing.T) {
+	input := `while (true) continue;`
+	l := lexer.New([]byte(input), "testfile.gpc")
+	p := New(l)
+	stmts := p.Parse()
+	checkParseErrors(t, p)
+
+	if len(stmts) != 1 {
+		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	s, ok := stmts[0].(*object.ForStmt)
+	if !ok {
+		t.Fatalf("Statement wrong type. expected=*object.ForStmt, got=%T", stmts[0])
+	}
+
+	br, ok := s.Body.(*object.ContinueStmt)
+	if !ok {
+		t.Fatalf("Body wrong type. expected=*object.BreakStmt, got=%T", s.Body)
+	}
+
+	if br.Keyword.Lexeme != "continue" {
+		t.Fatalf("lexeme wrong value. expected=%q, got=%q", "continue", br.Keyword.Lexeme)
+	}
+}
+
 func TestIfStatement(t *testing.T) {
 	input := `if (a == 1) 
   x = true;
@@ -656,6 +708,9 @@ func TestParserErrors(t *testing.T) {
 		{"do {} while;", 1, ";", "Expect '(' after 'while'."},
 		{"do {} while(x == 2;", 1, ";", "Expect ')' after while condition."},
 		{"do {} while(x == 2)", 1, "at end", "Expect ';' after ')'."},
+		{"while(true) { break }", 2, "}", "Expect ';' after 'break'."},
+		{"while(true) { continue }", 2, "}", "Expect ';' after 'continue'."},
+		// TODO: Break and Continue not in loop
 	}
 
 	for i, tt := range tests {

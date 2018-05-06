@@ -31,6 +31,8 @@ func main() {
 
 	statements := []string{
 		"Block      : Statements []Stmt",
+		"Break      : Keyword *lexer.Token",
+		"Continue   : Keyword *lexer.Token",
 		"Expression : Expression Expr",
 		"If         : Condition Expr, Then Stmt, Else Stmt",
 		"For        : Initializer Stmt, Condition Expr, Body Stmt, Increment Expr",
