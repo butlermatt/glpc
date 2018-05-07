@@ -116,6 +116,16 @@ type NullExpr struct {
 // Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
 func (n *NullExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitNullExpr(n) }
 
+// SetExpr is a Expr of a Set
+type SetExpr struct {
+	Object Expr
+	Name   *lexer.Token
+	Value  Expr
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (s *SetExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitSetExpr(s) }
+
 // StringExpr is a Expr of a String
 type StringExpr struct {
 	Token *lexer.Token
@@ -157,6 +167,7 @@ type ExprVisitor interface {
 	VisitLogicalExpr(expr *LogicalExpr) (Object, error)
 	VisitNumberExpr(expr *NumberExpr) (Object, error)
 	VisitNullExpr(expr *NullExpr) (Object, error)
+	VisitSetExpr(expr *SetExpr) (Object, error)
 	VisitStringExpr(expr *StringExpr) (Object, error)
 	VisitUnaryExpr(expr *UnaryExpr) (Object, error)
 	VisitVariableExpr(expr *VariableExpr) (Object, error)

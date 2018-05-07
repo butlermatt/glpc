@@ -441,7 +441,10 @@ func (p *Parser) assignment() object.Expr {
 		switch e := expr.(type) {
 		case *object.VariableExpr:
 			return &object.AssignExpr{Name: e.Name, Value: value}
-			// TODO: Add case for GetExpr and IndexExpr
+		case *object.GetExpr:
+			return &object.SetExpr{Object: e.Object, Name: e.Name, Value: value}
+		case *object.IndexExpr:
+			return &object.SetExpr{Object: e, Name: nil, Value: value}
 		}
 
 		p.addError(equals, "Invalid assignment target.")
