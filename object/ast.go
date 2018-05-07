@@ -206,6 +206,7 @@ func (i *IfStmt) Accept(visitor StmtVisitor) error { return visitor.VisitIfStmt(
 
 // ForStmt is a Stmt of a For
 type ForStmt struct {
+	Keyword     *lexer.Token
 	Initializer Stmt
 	Condition   Expr
 	Body        Stmt

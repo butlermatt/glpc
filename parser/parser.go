@@ -225,7 +225,6 @@ func (p *Parser) block() []object.Stmt {
 }
 
 func (p *Parser) breakStatement() object.Stmt {
-	// TODO: add check for in loop and return error
 	keyword := p.prevTok
 	if !p.consume(lexer.Semicolon, "Expect ';' after 'break'.") {
 		return nil
@@ -240,7 +239,6 @@ func (p *Parser) breakStatement() object.Stmt {
 }
 
 func (p *Parser) continueStatement() object.Stmt {
-	// TODO: add check for in loop and return error
 	keyword := p.prevTok
 	if !p.consume(lexer.Semicolon, "Expect ';' after 'continue'.") {
 		return nil
@@ -255,6 +253,8 @@ func (p *Parser) continueStatement() object.Stmt {
 }
 
 func (p *Parser) doWhileStatement() object.Stmt {
+	keyword := p.prevTok
+
 	loopCond := p.inLoop
 	p.inLoop = true
 	body := p.statement()
@@ -276,11 +276,12 @@ func (p *Parser) doWhileStatement() object.Stmt {
 		return nil
 	}
 
-	stmts := []object.Stmt{body, &object.ForStmt{Condition: cond, Body: body}}
-	return &object.BlockStmt{Statements: stmts}
+	return &object.ForStmt{Keyword: keyword, Condition: cond, Body: body}
 }
 
 func (p *Parser) forStatement() object.Stmt {
+	keyword := p.prevTok
+
 	if !p.consume(lexer.LParen, "Expect '(' after 'for'.") {
 		return nil
 	}
@@ -315,7 +316,7 @@ func (p *Parser) forStatement() object.Stmt {
 	body := p.statement()
 	p.inLoop = loopCond
 
-	return &object.ForStmt{Initializer: init, Condition: cond, Body: body, Increment: increment}
+	return &object.ForStmt{Keyword: keyword, Initializer: init, Condition: cond, Body: body, Increment: increment}
 }
 
 func (p *Parser) ifStatement() object.Stmt {
@@ -363,6 +364,8 @@ func (p *Parser) returnStatement() object.Stmt {
 }
 
 func (p *Parser) whileStatement() object.Stmt {
+	keyword := p.prevTok
+
 	if !p.consume(lexer.LParen, "Expect '(' after 'while'.") {
 		return nil
 	}
@@ -377,7 +380,7 @@ func (p *Parser) whileStatement() object.Stmt {
 	body := p.statement()
 	p.inLoop = loopCond
 
-	return &object.ForStmt{Condition: cond, Body: body}
+	return &object.ForStmt{Keyword: keyword, Condition: cond, Body: body}
 }
 
 func (p *Parser) expressionStatement() object.Stmt {

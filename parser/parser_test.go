@@ -63,28 +63,45 @@ func TestBlockStatement(t *testing.T) {
 }
 
 func TestBreakStatement(t *testing.T) {
-	input := `while (true) break;`
-	l := lexer.New([]byte(input), "testfile.gpc")
-	p := New(l)
-	stmts := p.Parse()
-	checkParseErrors(t, p)
-
-	if len(stmts) != 1 {
-		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
+	tests := []string{
+		`for (var i = 0; i < 10; i += 1) { break; }`,
+		`while (true) { break; }`,
+		`do { break; } while(true);`,
 	}
 
-	s, ok := stmts[0].(*object.ForStmt)
-	if !ok {
-		t.Fatalf("Statement wrong type. expected=*object.ForStmt, got=%T", stmts[0])
-	}
+	for _, tt := range tests {
+		l := lexer.New([]byte(tt), "testfile.gpc")
+		p := New(l)
+		stmts := p.Parse()
+		checkParseErrors(t, p)
 
-	br, ok := s.Body.(*object.BreakStmt)
-	if !ok {
-		t.Fatalf("Body wrong type. expected=*object.BreakStmt, got=%T", s.Body)
-	}
+		if len(stmts) != 1 {
+			t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
+		}
 
-	if br.Keyword.Lexeme != "break" {
-		t.Fatalf("lexeme wrong value. expected=%q, got=%q", "break", br.Keyword.Lexeme)
+
+		s, ok := stmts[0].(*object.ForStmt)
+		if !ok {
+			t.Fatalf("Statement wrong type. expected=*object.ForStmt, got=%T", stmts[0])
+		}
+		bl, ok := s.Body.(*object.BlockStmt)
+		if !ok {
+			t.Fatalf("Body wrong type, expected=*object.BlockStmt, got=%T", s.Body)
+		}
+
+
+		if len(bl.Statements) != 1 {
+			t.Fatalf("wrong number of statements. expected=%d, got=%d", 1, len(bl.Statements))
+		}
+
+		br, ok := bl.Statements[0].(*object.BreakStmt)
+		if !ok {
+			t.Fatalf("Body wrong type. expected=*object.BreakStmt, got=%T", s.Body)
+		}
+
+		if br.Keyword.Lexeme != "break" {
+			t.Fatalf("lexeme wrong value. expected=%q, got=%q", "break", br.Keyword.Lexeme)
+		}
 	}
 }
 
@@ -286,6 +303,10 @@ func TestForStatement(t *testing.T) {
 		t.Fatalf("statement wrong type. expected=*object.ForStmt, got=%T", stmts[0])
 	}
 
+	if fs.Keyword.Type != lexer.For {
+		t.Errorf("for statement token wrong type. expected=%q, got=%q", lexer.For, fs.Keyword.Type)
+	}
+
 	is, ok := fs.Initializer.(*object.VarStmt)
 	if !ok {
 		t.Fatalf("Initializer incorrect type. expected=*object.VarStmt, got=%T", fs.Initializer)
@@ -331,18 +352,13 @@ func TestDoWhileStatement(t *testing.T) {
 		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
 	}
 
-	block, ok := stmts[0].(*object.BlockStmt)
-	if !ok {
-		t.Fatalf("statement wrong type. expected=*object.BlockStmt, got=%T", stmts[0])
-	}
-
-	if len(block.Statements) != 2 {
-		t.Fatalf("wrong number of statements. expected=%d, got=%d", 2, len(block.Statements))
-	}
-
-	fs, ok := block.Statements[1].(*object.ForStmt)
+	fs, ok := stmts[0].(*object.ForStmt)
 	if !ok {
 		t.Fatalf("statement wrong type. expected=*object.ForStmt, got=%T", stmts[0])
+	}
+
+	if fs.Keyword.Type != lexer.Do {
+		t.Errorf("for statement token wrong type. expected=%q, got=%q", lexer.Do, fs.Keyword.Type)
 	}
 
 	if fs.Initializer != nil {
@@ -383,6 +399,10 @@ func TestWhileStatement(t *testing.T) {
 	fs, ok := stmts[0].(*object.ForStmt)
 	if !ok {
 		t.Fatalf("statement wrong type. expected=*object.ForStmt, got=%T", stmts[0])
+	}
+
+	if fs.Keyword.Type != lexer.While {
+		t.Errorf("for statement token wrong type. expected=%q, got=%q", lexer.While, fs.Keyword.Type)
 	}
 
 	if fs.Initializer != nil {
