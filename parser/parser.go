@@ -109,6 +109,8 @@ func (p *Parser) declaration() object.Stmt {
 	var stmt object.Stmt
 
 	switch {
+	case p.match(lexer.Class):
+		stmt = p.classDeclaration()
 	case p.match(lexer.Fn):
 		stmt = p.function("function")
 	case p.match(lexer.Var):
@@ -124,6 +126,40 @@ func (p *Parser) declaration() object.Stmt {
 	}
 
 	return stmt
+}
+
+func (p *Parser) classDeclaration() object.Stmt {
+	if !p.consume(lexer.Ident, "Expect class name.") {
+		return nil
+	}
+
+	name := p.prevTok
+
+	var super *object.VariableExpr
+	if p.match(lexer.Colon) {
+		if !p.consume(lexer.Ident, "Expect superclass name.") {
+
+		}
+		super = &object.VariableExpr{Name: p.prevTok}
+	}
+
+	if !p.consume(lexer.LBrace, "Expect '{' before class body.") {
+		return nil
+	}
+
+	var methods []*object.FunctionStmt
+	for !p.check(lexer.RBrace) && p.curTok.Type != lexer.EOF {
+		f := p.function("method")
+		if f == nil {
+			return nil
+		}
+		methods = append(methods, f.(*object.FunctionStmt))
+	}
+
+	if !p.consume(lexer.RBrace, "Expect '}' after class body.") {
+		return nil
+	}
+	return &object.ClassStmt{Name: name, Super: super, Methods: methods}
 }
 
 func (p *Parser) function(fnType string) object.Stmt {

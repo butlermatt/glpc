@@ -168,6 +168,16 @@ type BreakStmt struct {
 // Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
 func (b *BreakStmt) Accept(visitor StmtVisitor) error { return visitor.VisitBreakStmt(b) }
 
+// ClassStmt is a Stmt of a Class
+type ClassStmt struct {
+	Name    *lexer.Token
+	Super   *VariableExpr
+	Methods []*FunctionStmt
+}
+
+// Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
+func (c *ClassStmt) Accept(visitor StmtVisitor) error { return visitor.VisitClassStmt(c) }
+
 // ContinueStmt is a Stmt of a Continue
 type ContinueStmt struct {
 	Keyword *lexer.Token
@@ -238,6 +248,7 @@ func (v *VarStmt) Accept(visitor StmtVisitor) error { return visitor.VisitVarStm
 type StmtVisitor interface {
 	VisitBlockStmt(stmt *BlockStmt) error
 	VisitBreakStmt(stmt *BreakStmt) error
+	VisitClassStmt(stmt *ClassStmt) error
 	VisitContinueStmt(stmt *ContinueStmt) error
 	VisitExpressionStmt(stmt *ExpressionStmt) error
 	VisitFunctionStmt(stmt *FunctionStmt) error

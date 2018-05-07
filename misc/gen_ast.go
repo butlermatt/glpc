@@ -33,6 +33,7 @@ func main() {
 	statements := []string{
 		"Block      : Statements []Stmt",
 		"Break      : Keyword *lexer.Token",
+		"Class      : Name *lexer.Token, Super *VariableExpr, Methods []*FunctionStmt",
 		"Continue   : Keyword *lexer.Token",
 		"Expression : Expression Expr",
 		"Function   : Name *lexer.Token, Parameters []*lexer.Token, Body []Stmt",

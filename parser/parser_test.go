@@ -138,6 +138,44 @@ func TestCallExpression(t *testing.T) {
 	testBinaryExpression(t, ce.Args[2], 4, "+", 5)
 }
 
+func TestClassStatement(t *testing.T) {
+	input := `class test : origin { add(x, y) { return x + y; } }`
+	l := lexer.New([]byte(input), "testfile.gpc")
+	p := New(l)
+	stmts := p.Parse()
+	checkParseErrors(t, p)
+
+	if len(stmts) != 1 {
+		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	cs, ok := stmts[0].(*object.ClassStmt)
+	if !ok {
+		t.Fatalf("statement wrong type. expected=*object.ClassStmt, got=%T", stmts[0])
+	}
+
+	if cs.Name.Lexeme != "test" {
+		t.Errorf("class name wrong. expected=%q, got=%q", "test", cs.Name.Lexeme)
+	}
+
+	if cs.Super.Name.Lexeme != "origin" {
+		t.Errorf("Superclass name wrong. expected=%q, got=%q", "origin", cs.Super.Name.Lexeme)
+	}
+
+	if len(cs.Methods) != 1 {
+		t.Fatalf("wrong number of methods. expected=%d, got=%d", 1, len(cs.Methods))
+	}
+
+	fn := cs.Methods[0]
+	if fn.Name.Lexeme != "add" {
+		t.Errorf("wrong method name. expected=%q, got=%q", "add", fn.Name.Lexeme)
+	}
+
+	if len(fn.Parameters) != 2 {
+		t.Errorf("wrong number of method parameters. expected=%d, got=%d", 2, len(fn.Parameters))
+	}
+}
+
 func TestContinueStatement(t *testing.T) {
 	input := `while (true) continue;`
 	l := lexer.New([]byte(input), "testfile.gpc")
@@ -887,6 +925,10 @@ func TestParserErrors(t *testing.T) {
 		{"fn test() { return 1 }", 2, "}", "Expect ';' after return value."},
 		{"fn test() { return true }", 2, "}", "Expect ';' after return value."},
 		{"return;", 1, "return", "Cannot use 'return' outside of a function."},
+		{"class { }", 1, "{", "Expect class name."},
+		{"class test : { }", 1, "{", "Expect superclass name."},
+		{"class test }", 1, "}", "Expect '{' before class body."},
+		{"class test {", 1, "at end", "Expect '}' after class body."},
 	}
 
 	for i, tt := range tests {
