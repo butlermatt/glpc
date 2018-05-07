@@ -706,6 +706,41 @@ func TestBooleanLiteralExpression(t *testing.T) {
 	}
 }
 
+func TestGetExpression(t *testing.T) {
+	input := `test.x;`
+	l := lexer.New([]byte(input), "testfile.gpc")
+	p := New(l)
+	stmts := p.Parse()
+	checkParseErrors(t, p)
+
+	if len(stmts) != 1 {
+		t.Fatalf("wrong number of statements. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	es, ok := stmts[0].(*object.ExpressionStmt)
+	if !ok {
+		t.Fatalf("statement wrong type. expected=*object.ExpressionStmt, got=%T", stmts[0])
+	}
+
+	ge, ok := es.Expression.(*object.GetExpr)
+	if !ok {
+		t.Fatalf("expression wrong type. expected=*object.GetExpr, got=%T", es.Expression)
+	}
+
+	if ge.Name.Lexeme != "x" {
+		t.Errorf("wrong name. expected=%q, got=%q", "x", ge.Name.Lexeme)
+	}
+
+	ve, ok := ge.Object.(*object.VariableExpr)
+	if !ok {
+		t.Fatalf("wrong object type. expected=*object.VariableExpr, got=%T", ge.Object)
+	}
+
+	if ve.Name.Lexeme != "test" {
+		t.Errorf("wrong object name. expected=%q, got=%q", "test", ve.Name.Lexeme)
+	}
+}
+
 func TestGroupingExpression(t *testing.T) {
 	input := "(5);"
 

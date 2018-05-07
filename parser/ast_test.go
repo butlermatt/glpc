@@ -50,9 +50,15 @@ func (p *AstPrinter) VisitNumberExpr(expr *object.NumberExpr) (object.Object, er
 func (p *AstPrinter) VisitUnaryExpr(expr *object.UnaryExpr) (object.Object, error) {
 	return p.parenthesize(expr.Operator.Lexeme, expr.Right), nil
 }
+
 func (p *AstPrinter) VisitBooleanExpr(expr *object.BooleanExpr) (object.Object, error) {
 	return printerObj{value: fmt.Sprintf("%t", expr.Value)}, nil
 }
+
+func (p *AstPrinter) VisitGetExpr(expr *object.GetExpr) (object.Object, error) {
+	return p.parenthesize("." + expr.Name.Lexeme, expr.Object), nil
+}
+
 func (p *AstPrinter) VisitGroupingExpr(expr *object.GroupingExpr) (object.Object, error) {
 	return p.parenthesize("group", expr.Expression), nil
 }
@@ -126,6 +132,7 @@ func TestASTGrouping(t *testing.T) {
 		{"a += b;", "(= a (+ a b))"},
 		{"true or false;", "(or true false)"},
 		{"a[b + c];", "([] a (+ b c))"},
+		{"a.b;", "(.b a)"},
 	}
 
 	for i, tt := range tests {
