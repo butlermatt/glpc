@@ -26,9 +26,17 @@ func (p *AstPrinter) Print(expr object.Expr) string {
 func (p *AstPrinter) VisitAssignExpr(expr *object.AssignExpr) (object.Object, error) {
 	return p.parenthesize("= "+expr.Name.Lexeme, expr.Value), nil
 }
+
 func (p *AstPrinter) VisitBinaryExpr(expr *object.BinaryExpr) (object.Object, error) {
 	return p.parenthesize(expr.Operator.Lexeme, expr.Left, expr.Right), nil
 }
+
+func (p *AstPrinter) VisitCallExpr(expr *object.CallExpr) (object.Object, error) {
+	all := []object.Expr{expr.Callee}
+	all = append(all, expr.Args...)
+	return p.parenthesize("call", all...), nil
+}
+
 func (p *AstPrinter) VisitNumberExpr(expr *object.NumberExpr) (object.Object, error) {
 	var s string
 	if expr.Token.Type == lexer.NumberF {

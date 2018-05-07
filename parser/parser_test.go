@@ -88,6 +88,39 @@ func TestBreakStatement(t *testing.T) {
 	}
 }
 
+func TestCallExpression(t *testing.T) {
+	input := `add(1, 2 * 3, 4 + 5);`
+
+	l := lexer.New([]byte(input), "testfile.gpc")
+	p := New(l)
+	stmts := p.Parse()
+	checkParseErrors(t, p)
+
+	if len(stmts) != 1 {
+		t.Fatalf("wrong number of statements. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	st, ok := stmts[0].(*object.ExpressionStmt)
+	if !ok {
+		t.Fatalf("statement is wrong type. expected=*object.ExpressionStmt, got=%T", stmts[0])
+	}
+
+	ce, ok := st.Expression.(*object.CallExpr)
+	if !ok {
+		t.Fatalf("expression wrong type. expected=*object.CallExpr, got=%T", st.Expression)
+	}
+
+	testIdentifier(t, ce.Callee, "add")
+
+	if len(ce.Args) != 3 {
+		t.Fatalf("wrong number of arguments. expected=%d, got=%d", 3, len(ce.Args))
+	}
+
+	testLiteralExpression(t, ce.Args[0], 1)
+	testBinaryExpression(t, ce.Args[1], 2, "*", 3)
+	testBinaryExpression(t, ce.Args[2], 4, "+", 5)
+}
+
 func TestContinueStatement(t *testing.T) {
 	input := `while (true) continue;`
 	l := lexer.New([]byte(input), "testfile.gpc")

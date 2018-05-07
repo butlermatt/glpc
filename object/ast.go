@@ -40,6 +40,16 @@ type BooleanExpr struct {
 // Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
 func (b *BooleanExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitBooleanExpr(b) }
 
+// CallExpr is a Expr of a Call
+type CallExpr struct {
+	Callee Expr
+	Paren  *lexer.Token
+	Args   []Expr
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (c *CallExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitCallExpr(c) }
+
 // GroupingExpr is a Expr of a Grouping
 type GroupingExpr struct {
 	Expression Expr
@@ -130,6 +140,7 @@ type ExprVisitor interface {
 	VisitAssignExpr(expr *AssignExpr) (Object, error)
 	VisitBinaryExpr(expr *BinaryExpr) (Object, error)
 	VisitBooleanExpr(expr *BooleanExpr) (Object, error)
+	VisitCallExpr(expr *CallExpr) (Object, error)
 	VisitGroupingExpr(expr *GroupingExpr) (Object, error)
 	VisitIndexExpr(expr *IndexExpr) (Object, error)
 	VisitListExpr(expr *ListExpr) (Object, error)

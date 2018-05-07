@@ -556,7 +556,21 @@ func (p *Parser) unary() object.Expr {
 		return &object.UnaryExpr{Operator: oper, Right: right}
 	}
 
-	return p.index()
+	return p.call()
+}
+
+func (p *Parser) call() object.Expr {
+	expr := p.index()
+
+	for {
+		if p.match(lexer.LParen) {
+			expr = p.finishCall(expr)
+		} else {
+			break
+		}
+	}
+
+	return expr
 }
 
 func (p *Parser) index() object.Expr {
@@ -620,6 +634,35 @@ func (p *Parser) primary() object.Expr {
 
 	p.addError(p.curTok, "Expect expression.")
 	return nil
+}
+
+func (p *Parser) finishCall(callee object.Expr) object.Expr {
+	var args []object.Expr
+
+	if !p.check(lexer.RParen) {
+		a := p.expression()
+		if a == nil {
+			return nil
+		}
+
+		args = append(args, a)
+		for p.match(lexer.Comma) {
+			if len(args) > 32 {
+				p.addError(p.curTok, "Cannot have more than 32 arguments.")
+			}
+			a = p.expression()
+			if a == nil {
+				return nil
+			}
+			args = append(args, a)
+		}
+	}
+
+	if !p.consume(lexer.RParen, "Expect ')' after arguments.") {
+		return nil
+	}
+
+	return &object.CallExpr{Callee: callee, Paren: p.prevTok, Args: args}
 }
 
 func (p *Parser) parseNumber() *object.NumberExpr {
