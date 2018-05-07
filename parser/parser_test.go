@@ -821,17 +821,19 @@ func TestParserErrors(t *testing.T) {
 		{"do {} while(x == 2)", 1, "at end", "Expect ';' after ')'."},
 		{"while(true) { break }", 2, "}", "Expect ';' after 'break'."},
 		{"while(true) { continue }", 2, "}", "Expect ';' after 'continue'."},
-		// TODO: Break and Continue not in loop
+		{"if (i == 5) { break; }", 2, "break", "Cannot use 'break' outside of a loop."},
+		{"if (i == 5) { continue; }", 2, "continue", "Cannot use 'continue' outside of a loop."},
 		{"fn(x, y) {}", 1, "(", "Expect function name."},
 		{"fn test {}", 1, "{", "Expect '(' after function name."},
 		{"fn test(7){}", 1, "7", "Expect parameter name."},
 		{"fn test(x, ){}", 1, ")", "Expect parameter name."},
 		//{"fn test(a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, b) {}", 1, "b", "Cannot have more than 32 parameters"},
 		{"fn test(a, b {}", 1, "{", "Expect ')' after parameters."},
+
 		{"fn test(a, b) x = 10; }", 3, "x", "Expect '{' before function body."},
 		{"fn test() { return 1 }", 2, "}", "Expect ';' after return value."},
-
 		{"fn test() { return true }", 2, "}", "Expect ';' after return value."},
+		{"return;", 1, "return", "Cannot use 'return' outside of a function."},
 	}
 
 	for i, tt := range tests {

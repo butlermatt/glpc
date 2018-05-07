@@ -30,6 +30,8 @@ type Parser struct {
 	prevTok *lexer.Token
 	errors  []ParseError
 	errLen  int
+	inLoop  bool
+	inFn    bool
 }
 
 // New will return a new Parser initialized with the tokens from lexer. This will call ScanTokens on the lexer. Do not
@@ -160,7 +162,10 @@ func (p *Parser) function(fnType string) object.Stmt {
 		return nil
 	}
 
+	funcCond := p.inFn
+	p.inFn = true
 	body := p.block()
+	p.inFn = funcCond
 	return &object.FunctionStmt{Name: name, Parameters: params, Body: body}
 
 }
@@ -226,6 +231,11 @@ func (p *Parser) breakStatement() object.Stmt {
 		return nil
 	}
 
+	if !p.inLoop {
+		p.addError(keyword, "Cannot use 'break' outside of a loop.")
+		return nil
+	}
+
 	return &object.BreakStmt{Keyword: keyword}
 }
 
@@ -236,11 +246,19 @@ func (p *Parser) continueStatement() object.Stmt {
 		return nil
 	}
 
+	if !p.inLoop {
+		p.addError(keyword, "Cannot use 'continue' outside of a loop.")
+		return nil
+	}
+
 	return &object.ContinueStmt{Keyword: keyword}
 }
 
 func (p *Parser) doWhileStatement() object.Stmt {
+	loopCond := p.inLoop
+	p.inLoop = true
 	body := p.statement()
+	p.inLoop = loopCond
 
 	if !p.consume(lexer.While, "Expect 'while' after do-while body.") {
 		return nil
@@ -292,7 +310,10 @@ func (p *Parser) forStatement() object.Stmt {
 		return nil
 	}
 
+	loopCond := p.inLoop
+	p.inLoop = true
 	body := p.statement()
+	p.inLoop = loopCond
 
 	return &object.ForStmt{Initializer: init, Condition: cond, Body: body, Increment: increment}
 }
@@ -333,6 +354,11 @@ func (p *Parser) returnStatement() object.Stmt {
 		return nil
 	}
 
+	if !p.inFn {
+		p.addError(keyword, "Cannot use 'return' outside of a function.")
+		return nil
+	}
+
 	return &object.ReturnStmt{Keyword: keyword, Value: value}
 }
 
@@ -346,7 +372,10 @@ func (p *Parser) whileStatement() object.Stmt {
 		return nil
 	}
 
+	loopCond := p.inLoop
+	p.inLoop = true
 	body := p.statement()
+	p.inLoop = loopCond
 
 	return &object.ForStmt{Condition: cond, Body: body}
 }
