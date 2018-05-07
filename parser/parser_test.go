@@ -372,6 +372,49 @@ func TestWhileStatement(t *testing.T) {
 	}
 }
 
+func TestReturnStatement(t *testing.T) {
+	tests := []struct {
+		input string
+		value interface{}
+	}{
+		{"fn x() { return; }", nil},
+		{"fn x() { return true; }", true},
+		{"fn x() { return 42; }", 42},
+		{"fn x() { return y; }", "y"},
+		{"fn x() { return null; }", nil},
+	}
+
+	for i, tt := range tests {
+		l := lexer.New([]byte(tt.input), "testfile.gcp")
+		p := New(l)
+		stmts := p.Parse()
+		checkParseErrors(t, p)
+
+		fn, ok := stmts[0].(*object.FunctionStmt)
+		if !ok {
+			t.Errorf("test %d: unexpected statement. expected=*object.FunctionStatement, got=%T", i, stmts[0])
+			continue
+		}
+
+		if fn.Name.Lexeme != "x" {
+			t.Errorf("test %d: unexpected name. expected=%q, got=%q", i, "x", fn.Name.Lexeme)
+		}
+
+		if len(fn.Body) != 1 {
+			t.Errorf("test %d: wrong number of body statements. expected=1, got=%d", i, len(fn.Body))
+			continue
+		}
+
+		rt, ok := fn.Body[0].(*object.ReturnStmt)
+		if !ok {
+			t.Errorf("test %d: wrong statement type. expected=*object.ReturnStmt, got=%T", i, fn.Body[0])
+			continue
+		}
+
+		testLiteralExpression(t, rt.Value, tt.value)
+	}
+}
+
 func TestVarStatement(t *testing.T) {
 	tests := []struct {
 		input string
@@ -726,7 +769,6 @@ func TestNumberLiteralExpression(t *testing.T) {
 }
 
 func TestNullLiteralExpression(t *testing.T) {
-	var value interface{}
 	input := "null;"
 
 	l := lexer.New([]byte(input), "testfile.gpc")
@@ -744,14 +786,7 @@ func TestNullLiteralExpression(t *testing.T) {
 		t.Fatalf("statement[0] wrong type. expected=*object.ExpressionStmt, got=%T", stmts[0])
 	}
 
-	ne, ok := s.Expression.(*object.NullExpr)
-	if !ok {
-		t.Fatalf("expression wrong type. expected=*object.NullExpression, got=%T", s.Expression)
-	}
-
-	if ne.Value != value {
-		t.Fatalf("null value incorrect. expected=%v, got=%v", value, ne.Value)
-	}
+	testNullLiteral(t, s.Expression)
 }
 
 func TestParserErrors(t *testing.T) {
@@ -793,8 +828,10 @@ func TestParserErrors(t *testing.T) {
 		{"fn test(x, ){}", 1, ")", "Expect parameter name."},
 		//{"fn test(a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, b) {}", 1, "b", "Cannot have more than 32 parameters"},
 		{"fn test(a, b {}", 1, "{", "Expect ')' after parameters."},
-
 		{"fn test(a, b) x = 10; }", 3, "x", "Expect '{' before function body."},
+		{"fn test() { return 1 }", 2, "}", "Expect ';' after return value."},
+
+		{"fn test() { return true }", 2, "}", "Expect ';' after return value."},
 	}
 
 	for i, tt := range tests {
@@ -984,6 +1021,10 @@ func TestVariableExpr(t *testing.T) {
 }
 
 func testLiteralExpression(t *testing.T, expr object.Expr, expected interface{}) bool {
+	if expected == nil {
+		return testNullLiteral(t, expr)
+	}
+
 	switch v := expected.(type) {
 	case float64, int:
 		return testNumberLiteral(t, expr, v)
@@ -1072,6 +1113,22 @@ func testIdentifier(t *testing.T, expr object.Expr, value string) bool {
 		return false
 	}
 
+	return true
+}
+
+func testNullLiteral(t *testing.T, expr object.Expr) bool {
+	var value interface{}
+
+	ne, ok := expr.(*object.NullExpr)
+	if !ok {
+		t.Errorf("expr not correct type. expected=*object.NullExpr, got=%T", expr)
+		return false
+	}
+
+	if ne.Value != value {
+		t.Errorf("null value incorrect. expected=%v, got=%v", value, ne.Value)
+		return false
+	}
 	return true
 }
 

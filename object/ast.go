@@ -204,6 +204,15 @@ type ForStmt struct {
 // Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
 func (f *ForStmt) Accept(visitor StmtVisitor) error { return visitor.VisitForStmt(f) }
 
+// ReturnStmt is a Stmt of a Return
+type ReturnStmt struct {
+	Keyword *lexer.Token
+	Value   Expr
+}
+
+// Accept calls the correct visit method on StmtVisitor, passing a reference to itself as a value
+func (r *ReturnStmt) Accept(visitor StmtVisitor) error { return visitor.VisitReturnStmt(r) }
+
 // VarStmt is a Stmt of a Var
 type VarStmt struct {
 	Name  *lexer.Token
@@ -222,5 +231,6 @@ type StmtVisitor interface {
 	VisitFunctionStmt(stmt *FunctionStmt) error
 	VisitIfStmt(stmt *IfStmt) error
 	VisitForStmt(stmt *ForStmt) error
+	VisitReturnStmt(stmt *ReturnStmt) error
 	VisitVarStmt(stmt *VarStmt) error
 }
