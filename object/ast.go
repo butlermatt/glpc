@@ -135,6 +135,23 @@ type StringExpr struct {
 // Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
 func (s *StringExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitStringExpr(s) }
 
+// SuperExpr is a Expr of a Super
+type SuperExpr struct {
+	Keyword *lexer.Token
+	Method  *lexer.Token
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (s *SuperExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitSuperExpr(s) }
+
+// ThisExpr is a Expr of a This
+type ThisExpr struct {
+	Keyword *lexer.Token
+}
+
+// Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value
+func (t *ThisExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.VisitThisExpr(t) }
+
 // UnaryExpr is a Expr of a Unary
 type UnaryExpr struct {
 	Operator *lexer.Token
@@ -169,6 +186,8 @@ type ExprVisitor interface {
 	VisitNullExpr(expr *NullExpr) (Object, error)
 	VisitSetExpr(expr *SetExpr) (Object, error)
 	VisitStringExpr(expr *StringExpr) (Object, error)
+	VisitSuperExpr(expr *SuperExpr) (Object, error)
+	VisitThisExpr(expr *ThisExpr) (Object, error)
 	VisitUnaryExpr(expr *UnaryExpr) (Object, error)
 	VisitVariableExpr(expr *VariableExpr) (Object, error)
 }

@@ -653,9 +653,22 @@ func (p *Parser) primary() object.Expr {
 		return p.parseNumber()
 	case p.match(lexer.String, lexer.RawString):
 		return &object.StringExpr{Token: p.prevTok, Value: p.prevTok.Lexeme}
+	case p.match(lexer.This):
+		return &object.ThisExpr{Keyword: p.prevTok}
 	case p.match(lexer.UTString):
 		p.addError(p.prevTok, "Unterminated string.")
 		return nil
+	case p.match(lexer.Super):
+		keyword := p.prevTok
+		if !p.consume(lexer.Dot, "Expect '.' after 'super'.") {
+			return nil
+		}
+		if !p.consume(lexer.Ident, "Expect superclass method name.") {
+			return nil
+		}
+
+		method := p.prevTok
+		return &object.SuperExpr{Keyword: keyword, Method: method}
 	case p.match(lexer.LBracket):
 		var vals []object.Expr
 

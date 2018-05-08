@@ -28,6 +28,8 @@ func main() {
 		"Null     : Token *lexer.Token, Value interface{}",
 		"Set      : Object Expr, Name *lexer.Token, Value Expr",
 		"String   : Token *lexer.Token, Value string",
+		"Super    : Keyword *lexer.Token, Method *lexer.Token",
+		"This     : Keyword *lexer.Token",
 		"Unary    : Operator *lexer.Token, Right Expr",
 		"Variable : Name *lexer.Token",
 	}
