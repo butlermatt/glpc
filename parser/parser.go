@@ -701,21 +701,16 @@ func (p *Parser) primary() object.Expr {
 	case p.match(lexer.String, lexer.RawString):
 		return &object.StringExpr{Token: p.prevTok, Value: p.prevTok.Lexeme}
 	case p.match(lexer.This):
+		if p.curClass == ctNone {
+			p.addError(p.prevTok, "Cannot use 'this' outside of a class.")
+			return nil
+		}
 		return &object.ThisExpr{Keyword: p.prevTok}
 	case p.match(lexer.UTString):
 		p.addError(p.prevTok, "Unterminated string.")
 		return nil
 	case p.match(lexer.Super):
-		keyword := p.prevTok
-		if !p.consume(lexer.Dot, "Expect '.' after 'super'.") {
-			return nil
-		}
-		if !p.consume(lexer.Ident, "Expect superclass method name.") {
-			return nil
-		}
-
-		method := p.prevTok
-		return &object.SuperExpr{Keyword: keyword, Method: method}
+		return p.superCall()
 	case p.match(lexer.LBracket):
 		var vals []object.Expr
 
@@ -771,6 +766,27 @@ func (p *Parser) finishCall(callee object.Expr) object.Expr {
 	}
 
 	return &object.CallExpr{Callee: callee, Paren: p.prevTok, Args: args}
+}
+
+func (p *Parser) superCall() object.Expr {
+	keyword := p.prevTok
+	if !p.consume(lexer.Dot, "Expect '.' after 'super'.") {
+		return nil
+	}
+	if !p.consume(lexer.Ident, "Expect superclass method name.") {
+		return nil
+	}
+
+	if p.curClass == ctNone {
+		p.addError(keyword, "Cannot use 'super' outside of a class.")
+		return nil
+	} else if p.curClass != ctSubclass {
+		p.addError(keyword, "Cannot use 'super' in a class with no superclass.")
+		return nil
+	}
+
+	method := p.prevTok
+	return &object.SuperExpr{Keyword: keyword, Method: method}
 }
 
 func (p *Parser) parseNumber() *object.NumberExpr {

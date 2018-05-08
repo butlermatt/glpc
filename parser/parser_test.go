@@ -931,7 +931,7 @@ func TestParserErrors(t *testing.T) {
 		{"x = true", 1, "at end", "Expect ';' after value."},
 		{"x[2", 2, "at end", "Expect ']' after index."},
 		{"if y x = 7;", 1, "y", "Expect '(' after 'if'."},
-		{"{ x = 2;", 1, "at end", "Expect '}' after block."},
+		{"{ x = 2;", 1, "at end", "Expect '}' after block."}, //10
 
 		{"for x = 2;", 1, "x", "Expect '(' after 'for'."},
 		{"for (;)", 2, ")", "Expect expression."},
@@ -942,7 +942,7 @@ func TestParserErrors(t *testing.T) {
 		{"while (true { }", 1, "{", "Expect ')' after while condition."},
 		{"do {} ;", 1, ";", "Expect 'while' after do-while body."},
 		{"do {} while;", 1, ";", "Expect '(' after 'while'."},
-		{"do {} while(x == 2;", 1, ";", "Expect ')' after while condition."},
+		{"do {} while(x == 2;", 1, ";", "Expect ')' after while condition."}, //20
 
 		{"do {} while(x == 2)", 1, "at end", "Expect ';' after ')'."},
 		{"while(true) { break }", 2, "}", "Expect ';' after 'break'."},
@@ -953,8 +953,7 @@ func TestParserErrors(t *testing.T) {
 		{"fn test {}", 1, "{", "Expect '(' after function name."},
 		{"fn test(7){}", 1, "7", "Expect parameter name."},
 		{"fn test(x, ){}", 1, ")", "Expect parameter name."},
-		//{"fn test(a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, b) {}", 1, "b", "Cannot have more than 32 parameters"},
-		{"fn test(a, b {}", 1, "{", "Expect ')' after parameters."},
+		{"fn test(a, b {}", 1, "{", "Expect ')' after parameters."}, // 30
 
 		{"fn test(a, b) x = 10; }", 3, "x", "Expect '{' before function body."},
 		{"fn test() { return 1 }", 2, "}", "Expect ';' after return value."},
@@ -964,6 +963,11 @@ func TestParserErrors(t *testing.T) {
 		{"class test : { }", 1, "{", "Expect superclass name."},
 		{"class test }", 1, "}", "Expect '{' before class body."},
 		{"class test {", 1, "at end", "Expect '}' after class body."},
+		{"this.x = true;", 1, "this", "Cannot use 'this' outside of a class."},
+		{"super = true;", 2, "=", "Expect '.' after 'super'."}, // 40
+
+		{"super. = true;", 2, "=", "Expect superclass method name."},
+		{"super.x = true;", 2, "super", "Cannot use 'super' outside of a class."},
 	}
 
 	for i, tt := range tests {
