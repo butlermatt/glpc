@@ -61,13 +61,15 @@ type Parser struct {
 	inLoop   bool
 	curFn    functionType
 	curClass classType
+	resolve  *Resolver
 }
 
 // New will return a new Parser initialized with the tokens from lexer. This will call ScanTokens on the lexer. Do not
 // scan tokens prior to passing to the Parser.
 func New(lexer *lexer.Lexer) *Parser {
 	lexer.ScanTokens()
-	p := &Parser{l: lexer, curFn: ftNone, curClass: ctNone}
+	r := NewResolver()
+	p := &Parser{l: lexer, curFn: ftNone, curClass: ctNone, resolve: r}
 	p.nextToken()
 
 	return p
@@ -161,9 +163,11 @@ func (p *Parser) classDeclaration() object.Stmt {
 	if !p.consume(lexer.Ident, "Expect class name.") {
 		return nil
 	}
-	prevClass := p.curClass
 
+	prevClass := p.curClass
 	name := p.prevTok
+	p.resolve.Declare(name)
+	p.resolve.Define(name)
 
 	p.curClass = ctClass
 	var super *object.VariableExpr
@@ -174,17 +178,32 @@ func (p *Parser) classDeclaration() object.Stmt {
 		}
 		p.curClass = ctSubclass
 		super = &object.VariableExpr{Name: p.prevTok}
+		p.resolve.Local(super, p.prevTok)
+		p.resolve.Begin()
+		scope := p.resolve.Peek()
+		scope["super"] = true
 	}
 
 	if !p.consume(lexer.LBrace, "Expect '{' before class body.") {
+		if p.curClass == ctSubclass {
+			p.resolve.End()
+		}
 		p.curClass = prevClass
 		return nil
 	}
+
+	p.resolve.Begin()
+	scope := p.resolve.Peek()
+	scope["this"] = true
 
 	var methods []*object.FunctionStmt
 	for !p.check(lexer.RBrace) && p.curTok.Type != lexer.EOF {
 		f := p.function(ftMethod)
 		if f == nil {
+			p.resolve.End()
+			if p.curClass == ctSubclass {
+				p.resolve.End()
+			}
 			p.curClass = prevClass
 			return nil
 		}
@@ -192,8 +211,17 @@ func (p *Parser) classDeclaration() object.Stmt {
 	}
 
 	if !p.consume(lexer.RBrace, "Expect '}' after class body.") {
+		p.resolve.End()
+		if p.curClass == ctSubclass {
+			p.resolve.End()
+		}
 		p.curClass = prevClass
 		return nil
+	}
+
+	p.resolve.End()
+	if p.curClass == ctSubclass {
+		p.resolve.End()
 	}
 	p.curClass = prevClass
 	return &object.ClassStmt{Name: name, Super: super, Methods: methods}
@@ -208,6 +236,8 @@ func (p *Parser) function(fnType functionType) object.Stmt {
 	p.curFn = fnType
 
 	name := p.prevTok
+	p.resolve.Define(name)
+	p.resolve.Declare(name)
 	if name.Lexeme == "init" {
 		p.curFn = ftInit
 	}
@@ -216,38 +246,48 @@ func (p *Parser) function(fnType functionType) object.Stmt {
 		return nil
 	}
 
+	p.resolve.Begin()
 	var params []*lexer.Token
 	if !p.check(lexer.RParen) {
 		if !p.consume(lexer.Ident, "Expect parameter name.") {
+			p.resolve.End()
 			p.curFn = prevFn
 			return nil
 		}
 
+		p.resolve.Define(p.prevTok)
+		p.resolve.Declare(p.prevTok)
 		params = append(params, p.prevTok)
 		for p.match(lexer.Comma) {
 			if len(params) > 32 {
 				p.addError(p.curTok, "Cannot have more than 32 parameters.")
 			}
 			if !p.consume(lexer.Ident, "Expect parameter name.") {
+				p.resolve.End()
 				p.curFn = prevFn
 				return nil
 			}
+			p.resolve.Define(p.prevTok)
+			p.resolve.Declare(p.prevTok)
 			params = append(params, p.prevTok)
 		}
 	}
 
 	if !p.consume(lexer.RParen, "Expect ')' after parameters.") {
+		p.resolve.End()
 		p.curFn = prevFn
 		return nil
 	}
 
 	if !p.consume(lexer.LBrace, "Expect '{' before "+fnType.String()+" body.") {
+		p.resolve.End()
 		p.curFn = prevFn
 		return nil
 	}
 
 	body := p.block()
 
+	p.resolve.End()
 	p.curFn = prevFn
 	return &object.FunctionStmt{Name: name, Parameters: params, Body: body}
 
@@ -259,12 +299,14 @@ func (p *Parser) varDeclaration() object.Stmt {
 	}
 
 	name := p.prevTok
+	p.resolve.Define(name)
 
 	var init object.Expr
 	if p.match(lexer.Equal) {
 		init = p.expression()
 	}
 
+	p.resolve.Define(name)
 	p.consume(lexer.Semicolon, "Expect ';' after variable declaration.")
 	return &object.VarStmt{Name: name, Value: init}
 }
@@ -272,7 +314,10 @@ func (p *Parser) varDeclaration() object.Stmt {
 func (p *Parser) statement() object.Stmt {
 	switch {
 	case p.match(lexer.LBrace):
-		return &object.BlockStmt{Statements: p.block()}
+		p.resolve.Begin()
+		bs := &object.BlockStmt{Statements: p.block()}
+		p.resolve.End()
+		return bs
 	case p.match(lexer.Break):
 		return p.breakStatement()
 	case p.match(lexer.Continue):
@@ -339,9 +384,11 @@ func (p *Parser) doWhileStatement() object.Stmt {
 	keyword := p.prevTok
 
 	loopCond := p.inLoop
+	p.resolve.Begin()
 	p.inLoop = true
 	body := p.statement()
 	p.inLoop = loopCond
+	p.resolve.End()
 
 	if !p.consume(lexer.While, "Expect 'while' after do-while body.") {
 		return nil
@@ -369,6 +416,7 @@ func (p *Parser) forStatement() object.Stmt {
 		return nil
 	}
 
+	p.resolve.Begin()
 	var init object.Stmt
 	if p.match(lexer.Semicolon) {
 		init = nil
@@ -383,6 +431,7 @@ func (p *Parser) forStatement() object.Stmt {
 		cond = p.expression()
 	}
 	if !p.consume(lexer.Semicolon, "Expect ';' after loop condition.") {
+		p.resolve.End()
 		return nil
 	}
 
@@ -391,6 +440,7 @@ func (p *Parser) forStatement() object.Stmt {
 		increment = p.expression()
 	}
 	if !p.consume(lexer.RParen, "Expect ')' after for clauses.") {
+		p.resolve.End()
 		return nil
 	}
 
@@ -398,6 +448,7 @@ func (p *Parser) forStatement() object.Stmt {
 	p.inLoop = true
 	body := p.statement()
 	p.inLoop = loopCond
+	p.resolve.End()
 
 	return &object.ForStmt{Keyword: keyword, Initializer: init, Condition: cond, Body: body, Increment: increment}
 }
@@ -458,10 +509,12 @@ func (p *Parser) whileStatement() object.Stmt {
 		return nil
 	}
 
+	p.resolve.Begin()
 	loopCond := p.inLoop
 	p.inLoop = true
 	body := p.statement()
 	p.inLoop = loopCond
+	p.resolve.End()
 
 	return &object.ForStmt{Keyword: keyword, Condition: cond, Body: body}
 }
