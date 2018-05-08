@@ -56,7 +56,7 @@ func (p *AstPrinter) VisitBooleanExpr(expr *object.BooleanExpr) (object.Object, 
 }
 
 func (p *AstPrinter) VisitGetExpr(expr *object.GetExpr) (object.Object, error) {
-	return p.parenthesize("." + expr.Name.Lexeme, expr.Object), nil
+	return p.parenthesize("."+expr.Name.Lexeme, expr.Object), nil
 }
 
 func (p *AstPrinter) VisitGroupingExpr(expr *object.GroupingExpr) (object.Object, error) {
@@ -90,9 +90,23 @@ func (p *AstPrinter) VisitLogicalExpr(expr *object.LogicalExpr) (object.Object, 
 func (p *AstPrinter) VisitNullExpr(expr *object.NullExpr) (object.Object, error) {
 	return printerObj{"null"}, nil
 }
+
+func (p *AstPrinter) VisitSetExpr(expr *object.SetExpr) (object.Object, error) {
+	return p.parenthesize(expr.Name.Lexeme, expr.Object, expr.Value), nil
+}
+
 func (p *AstPrinter) VisitStringExpr(expr *object.StringExpr) (object.Object, error) {
 	return printerObj{expr.Value}, nil
 }
+
+func (p *AstPrinter) VisitSuperExpr(expr *object.SuperExpr) (object.Object, error) {
+	return printerObj{"super." + expr.Method.Lexeme}, nil
+}
+
+func (p *AstPrinter) VisitThisExpr(expr *object.ThisExpr) (object.Object, error) {
+	return printerObj{value: "this"}, nil
+}
+
 func (p *AstPrinter) VisitVariableExpr(expr *object.VariableExpr) (object.Object, error) {
 	return printerObj{value: expr.Name.Lexeme}, nil
 }

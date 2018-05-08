@@ -8,6 +8,23 @@ import (
 	"github.com/butlermatt/glpc/object"
 )
 
+type classType int
+
+const (
+	ctNone classType = iota
+	ctClass
+	ctSubclass
+)
+
+type functionType int
+
+const (
+	ftNone functionType = iota
+	ftFunc
+	ftInit
+	ftMethod
+)
+
 // ParseError represents compile time syntax errors that the Parser discovers. It will try to recover from them
 // when possible.
 type ParseError struct {
