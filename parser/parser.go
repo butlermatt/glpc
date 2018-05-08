@@ -25,6 +25,17 @@ const (
 	ftMethod
 )
 
+// String returns a string representation of the function type.
+func (f functionType) String() string {
+	switch f {
+	case ftFunc:
+		return "function"
+	case ftInit, ftMethod:
+		return "method"
+	}
+	return ""
+}
+
 // ParseError represents compile time syntax errors that the Parser discovers. It will try to recover from them
 // when possible.
 type ParseError struct {
@@ -42,20 +53,21 @@ func (pe ParseError) Error() string {
 
 // Parser iterates through the tokens scanned by the lexer and generates the correct AST.
 type Parser struct {
-	l       *lexer.Lexer
-	curTok  *lexer.Token
-	prevTok *lexer.Token
-	errors  []ParseError
-	errLen  int
-	inLoop  bool
-	inFn    bool
+	l        *lexer.Lexer
+	curTok   *lexer.Token
+	prevTok  *lexer.Token
+	errors   []ParseError
+	errLen   int
+	inLoop   bool
+	curFn    functionType
+	curClass classType
 }
 
 // New will return a new Parser initialized with the tokens from lexer. This will call ScanTokens on the lexer. Do not
 // scan tokens prior to passing to the Parser.
 func New(lexer *lexer.Lexer) *Parser {
 	lexer.ScanTokens()
-	p := &Parser{l: lexer}
+	p := &Parser{l: lexer, curFn: ftNone, curClass: ctNone}
 	p.nextToken()
 
 	return p
@@ -129,7 +141,7 @@ func (p *Parser) declaration() object.Stmt {
 	case p.match(lexer.Class):
 		stmt = p.classDeclaration()
 	case p.match(lexer.Fn):
-		stmt = p.function("function")
+		stmt = p.function(ftFunc)
 	case p.match(lexer.Var):
 		stmt = p.varDeclaration()
 	default:
@@ -149,49 +161,65 @@ func (p *Parser) classDeclaration() object.Stmt {
 	if !p.consume(lexer.Ident, "Expect class name.") {
 		return nil
 	}
+	prevClass := p.curClass
 
 	name := p.prevTok
 
+	p.curClass = ctClass
 	var super *object.VariableExpr
 	if p.match(lexer.Colon) {
 		if !p.consume(lexer.Ident, "Expect superclass name.") {
-
+			p.curClass = prevClass
+			return nil
 		}
+		p.curClass = ctSubclass
 		super = &object.VariableExpr{Name: p.prevTok}
 	}
 
 	if !p.consume(lexer.LBrace, "Expect '{' before class body.") {
+		p.curClass = prevClass
 		return nil
 	}
 
 	var methods []*object.FunctionStmt
 	for !p.check(lexer.RBrace) && p.curTok.Type != lexer.EOF {
-		f := p.function("method")
+		f := p.function(ftMethod)
 		if f == nil {
+			p.curClass = prevClass
 			return nil
 		}
 		methods = append(methods, f.(*object.FunctionStmt))
 	}
 
 	if !p.consume(lexer.RBrace, "Expect '}' after class body.") {
+		p.curClass = prevClass
 		return nil
 	}
+	p.curClass = prevClass
 	return &object.ClassStmt{Name: name, Super: super, Methods: methods}
 }
 
-func (p *Parser) function(fnType string) object.Stmt {
-	if !p.consume(lexer.Ident, "Expect "+fnType+" name.") {
+func (p *Parser) function(fnType functionType) object.Stmt {
+	if !p.consume(lexer.Ident, "Expect "+fnType.String()+" name.") {
 		return nil
 	}
 
+	prevFn := p.curFn
+	p.curFn = fnType
+
 	name := p.prevTok
-	if !p.consume(lexer.LParen, "Expect '(' after "+fnType+" name.") {
+	if name.Lexeme == "init" {
+		p.curFn = ftInit
+	}
+	if !p.consume(lexer.LParen, "Expect '(' after "+fnType.String()+" name.") {
+		p.curFn = prevFn
 		return nil
 	}
 
 	var params []*lexer.Token
 	if !p.check(lexer.RParen) {
 		if !p.consume(lexer.Ident, "Expect parameter name.") {
+			p.curFn = prevFn
 			return nil
 		}
 
@@ -201,6 +229,7 @@ func (p *Parser) function(fnType string) object.Stmt {
 				p.addError(p.curTok, "Cannot have more than 32 parameters.")
 			}
 			if !p.consume(lexer.Ident, "Expect parameter name.") {
+				p.curFn = prevFn
 				return nil
 			}
 			params = append(params, p.prevTok)
@@ -208,17 +237,18 @@ func (p *Parser) function(fnType string) object.Stmt {
 	}
 
 	if !p.consume(lexer.RParen, "Expect ')' after parameters.") {
+		p.curFn = prevFn
 		return nil
 	}
 
-	if !p.consume(lexer.LBrace, "Expect '{' before "+fnType+" body.") {
+	if !p.consume(lexer.LBrace, "Expect '{' before "+fnType.String()+" body.") {
+		p.curFn = prevFn
 		return nil
 	}
 
-	funcCond := p.inFn
-	p.inFn = true
 	body := p.block()
-	p.inFn = funcCond
+
+	p.curFn = prevFn
 	return &object.FunctionStmt{Name: name, Parameters: params, Body: body}
 
 }
@@ -408,7 +438,7 @@ func (p *Parser) returnStatement() object.Stmt {
 		return nil
 	}
 
-	if !p.inFn {
+	if p.curFn == ftNone {
 		p.addError(keyword, "Cannot use 'return' outside of a function.")
 		return nil
 	}
