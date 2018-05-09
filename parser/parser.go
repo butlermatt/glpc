@@ -299,11 +299,14 @@ func (p *Parser) varDeclaration() object.Stmt {
 	}
 
 	name := p.prevTok
-	p.resolve.Define(name)
+	p.resolve.Declare(name)
 
 	var init object.Expr
 	if p.match(lexer.Equal) {
 		init = p.expression()
+		if init == nil {
+			return nil
+		}
 	}
 
 	p.resolve.Define(name)
@@ -540,7 +543,9 @@ func (p *Parser) assignment() object.Expr {
 
 		switch e := expr.(type) {
 		case *object.VariableExpr:
-			return &object.AssignExpr{Name: e.Name, Value: value}
+			ae := &object.AssignExpr{Name: e.Name, Value: value}
+			p.resolve.Local(ae, ae.Name)
+			return ae
 		case *object.GetExpr:
 			return &object.SetExpr{Object: e.Object, Name: e.Name, Value: value}
 		case *object.IndexExpr:
@@ -576,7 +581,13 @@ func (p *Parser) assignment() object.Expr {
 		be := &object.BinaryExpr{Left: expr, Operator: oper, Right: value}
 		switch e := expr.(type) {
 		case *object.VariableExpr:
-			return &object.AssignExpr{Name: e.Name, Value: be}
+			ae := &object.AssignExpr{Name: e.Name, Value: be}
+			p.resolve.Local(ae, ae.Name)
+			return ae
+		case *object.GetExpr:
+			return &object.SetExpr{Object: e.Object, Name: e.Name, Value: be}
+		case *object.IndexExpr:
+			return &object.SetExpr{Object: e, Name: nil, Value: be}
 		}
 	}
 
@@ -721,6 +732,35 @@ func (p *Parser) call() object.Expr {
 	return expr
 }
 
+func (p *Parser) finishCall(callee object.Expr) object.Expr {
+	var args []object.Expr
+
+	if !p.check(lexer.RParen) {
+		a := p.expression()
+		if a == nil {
+			return nil
+		}
+
+		args = append(args, a)
+		for p.match(lexer.Comma) {
+			if len(args) > 32 {
+				p.addError(p.curTok, "Cannot have more than 32 arguments.")
+			}
+			a = p.expression()
+			if a == nil {
+				return nil
+			}
+			args = append(args, a)
+		}
+	}
+
+	if !p.consume(lexer.RParen, "Expect ')' after arguments.") {
+		return nil
+	}
+
+	return &object.CallExpr{Callee: callee, Paren: p.prevTok, Args: args}
+}
+
 func (p *Parser) index() object.Expr {
 	expr := p.primary()
 
@@ -746,7 +786,7 @@ func (p *Parser) primary() object.Expr {
 	case p.match(lexer.False, lexer.True):
 		return &object.BooleanExpr{Token: p.prevTok, Value: p.prevTok.Type == lexer.True}
 	case p.match(lexer.Ident):
-		return &object.VariableExpr{Name: p.prevTok}
+		return p.variable()
 	case p.match(lexer.Null):
 		return &object.NullExpr{Token: p.prevTok, Value: nil}
 	case p.match(lexer.NumberF, lexer.NumberI):
@@ -754,11 +794,7 @@ func (p *Parser) primary() object.Expr {
 	case p.match(lexer.String, lexer.RawString):
 		return &object.StringExpr{Token: p.prevTok, Value: p.prevTok.Lexeme}
 	case p.match(lexer.This):
-		if p.curClass == ctNone {
-			p.addError(p.prevTok, "Cannot use 'this' outside of a class.")
-			return nil
-		}
-		return &object.ThisExpr{Keyword: p.prevTok}
+		return p.thisCall()
 	case p.match(lexer.UTString):
 		p.addError(p.prevTok, "Unterminated string.")
 		return nil
@@ -792,35 +828,6 @@ func (p *Parser) primary() object.Expr {
 	return nil
 }
 
-func (p *Parser) finishCall(callee object.Expr) object.Expr {
-	var args []object.Expr
-
-	if !p.check(lexer.RParen) {
-		a := p.expression()
-		if a == nil {
-			return nil
-		}
-
-		args = append(args, a)
-		for p.match(lexer.Comma) {
-			if len(args) > 32 {
-				p.addError(p.curTok, "Cannot have more than 32 arguments.")
-			}
-			a = p.expression()
-			if a == nil {
-				return nil
-			}
-			args = append(args, a)
-		}
-	}
-
-	if !p.consume(lexer.RParen, "Expect ')' after arguments.") {
-		return nil
-	}
-
-	return &object.CallExpr{Callee: callee, Paren: p.prevTok, Args: args}
-}
-
 func (p *Parser) superCall() object.Expr {
 	keyword := p.prevTok
 	if !p.consume(lexer.Dot, "Expect '.' after 'super'.") {
@@ -839,7 +846,35 @@ func (p *Parser) superCall() object.Expr {
 	}
 
 	method := p.prevTok
-	return &object.SuperExpr{Keyword: keyword, Method: method}
+	se := &object.SuperExpr{Keyword: keyword, Method: method}
+	p.resolve.Local(se, se.Keyword)
+	return se
+}
+
+func (p *Parser) thisCall() object.Expr {
+	if p.curClass == ctNone {
+		p.addError(p.prevTok, "Cannot use 'this' outside of a class.")
+		return nil
+	}
+
+	te := &object.ThisExpr{Keyword: p.prevTok}
+	p.resolve.Local(te, te.Keyword)
+	return te
+}
+
+func (p *Parser) variable() object.Expr {
+	name := p.prevTok
+
+	scope := p.resolve.Peek()
+	if scope != nil {
+		if defined, ok := scope[name.Lexeme]; ok && !defined {
+			p.addError(name, "Cannot read local variable in its own initializer.")
+			return nil
+		}
+	}
+	le := &object.VariableExpr{Name: name}
+	p.resolve.Local(le, le.Name)
+	return le
 }
 
 func (p *Parser) parseNumber() *object.NumberExpr {

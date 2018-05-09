@@ -79,7 +79,6 @@ func TestBreakStatement(t *testing.T) {
 			t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
 		}
 
-
 		s, ok := stmts[0].(*object.ForStmt)
 		if !ok {
 			t.Fatalf("Statement wrong type. expected=*object.ForStmt, got=%T", stmts[0])
@@ -88,7 +87,6 @@ func TestBreakStatement(t *testing.T) {
 		if !ok {
 			t.Fatalf("Body wrong type, expected=*object.BlockStmt, got=%T", s.Body)
 		}
-
 
 		if len(bl.Statements) != 1 {
 			t.Fatalf("wrong number of statements. expected=%d, got=%d", 1, len(bl.Statements))
@@ -968,6 +966,7 @@ func TestParserErrors(t *testing.T) {
 
 		{"super. = true;", 2, "=", "Expect superclass method name."},
 		{"super.x = true;", 2, "super", "Cannot use 'super' outside of a class."},
+		{"fn x() { var i = i + 1; }", 1, "i", "Cannot read local variable in its own initializer."},
 	}
 
 	for i, tt := range tests {
@@ -1355,7 +1354,7 @@ func testVariable(t *testing.T, stmt object.Stmt, ident string) bool {
 func testParseErrors(t *testing.T, p *Parser, numErrs int, where, msg string) bool {
 	stmts := p.Parse()
 
-	if len(stmts) != 0 {
+	if len(stmts) > 1 {
 		t.Errorf("wrong number of statements. expected=0, got=%d", len(stmts))
 		return false
 	}
