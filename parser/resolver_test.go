@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/butlermatt/glpc/lexer"
+	"github.com/butlermatt/glpc/object"
 )
 
 func TestResolver_BeginEnd(t *testing.T) {
@@ -138,4 +139,65 @@ func TestResolver_Define(t *testing.T) {
 
 	r.End()
 	r.End()
+}
+
+func TestResolver_Local(t *testing.T) {
+	r := NewResolver()
+	r.Begin()
+
+	name := lexer.NewToken(lexer.Ident, "x", "testfile.gpc", 1)
+	r.Declare(name)
+	r.Define(name)
+
+	o := &object.VariableExpr{Name: name}
+	r.Local(o, o.Name)
+
+	d, ok := r.dist[o]
+	if !ok {
+		t.Fatalf("unable to locate expression in depth map")
+	}
+
+	if d != 0 {
+		t.Errorf("depth value incorrect. expected=%d, got=%d", 0, d)
+	}
+
+	r.Begin()
+	r.Begin()
+
+	o2 := &object.VariableExpr{Name: name}
+	r.Local(o2, o2.Name)
+
+	d, ok = r.dist[o]
+	if !ok {
+		t.Fatalf("unable to locate expression in depth map")
+	}
+
+	if d != 0 {
+		t.Errorf("depth value incorrect. expected=%d, got=%d", 0, d)
+	}
+
+	d, ok = r.dist[o2]
+	if !ok {
+		t.Fatalf("unable to locate expression in depth map")
+	}
+
+	if d != 2 {
+		t.Errorf("depth value incorrect. expected=%d, got=%d", 2, d)
+	}
+
+	r.End()
+	r.End()
+	r.End()
+
+	o3 := &object.VariableExpr{Name: name}
+	r.Local(o3, o3.Name)
+
+	d, ok = r.dist[o3]
+	if ok {
+		t.Errorf("found expression in map when it shouldn't have been there: %v", r.dist)
+	}
+
+	if d != 0 {
+		t.Errorf("unexpected distance value. expected=0, got=%d", d)
+	}
 }
