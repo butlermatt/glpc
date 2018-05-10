@@ -72,6 +72,18 @@ func (inter *Interpreter) executeBlock(stmts []object.Stmt, env *object.Environm
 	return err
 }
 
+func isTruthy(obj object.Object) bool {
+	if obj == nil || obj.Type() == object.Null {
+		return false
+	}
+
+	if obj.Type() == object.Boolean {
+		return obj.(*Boolean).Value
+	}
+
+	return true
+}
+
 func (inter *Interpreter) VisitBlockStmt(stmt *object.BlockStmt) error {
 	return inter.executeBlock(stmt.Statements, object.NewEnclosedEnvironment(inter.env))
 }
@@ -86,8 +98,75 @@ func (inter *Interpreter) VisitExpressionStmt(stmt *object.ExpressionStmt) error
 }
 
 func (inter *Interpreter) VisitFunctionStmt(stmt *object.FunctionStmt) error {return nil}
-func (inter *Interpreter) VisitIfStmt(stmt *object.IfStmt) error {return nil}
-func (inter *Interpreter) VisitForStmt(stmt *object.ForStmt) error {return nil}
+
+func (inter *Interpreter) VisitIfStmt(stmt *object.IfStmt) error {
+	cond, err := inter.evaluate(stmt.Condition)
+	if err != nil {
+		return err
+	}
+
+	if isTruthy(cond) {
+		return inter.execute(stmt.Then)
+	}
+
+	if stmt.Else != nil {
+		return inter.execute(stmt.Else)
+	}
+
+	return nil
+}
+
+func (inter *Interpreter) VisitForStmt(stmt *object.ForStmt) error {
+	prev := inter.env
+	inter.env = object.NewEnclosedEnvironment(prev)
+
+	if stmt.Initializer != nil {
+		err := inter.execute(stmt.Initializer)
+		if err != nil {
+			inter.env = prev
+			return err
+		}
+	}
+
+	if stmt.Keyword.Type == lexer.Do {
+		err := inter.execute(stmt.Body)
+		if err != nil {
+			if err == BreakError {
+				inter.env = prev
+				return nil
+			}
+			if err != ContinueError {
+				inter.env = prev
+				return err
+			}
+		}
+	}
+
+	cond, err := inter.evaluate(stmt.Condition)
+	for err == nil && isTruthy(cond) {
+		err = inter.execute(stmt.Body)
+		if err == BreakError {
+			err = nil
+			break
+		}else if err == ContinueError {
+			err = nil
+		} else if err != nil {
+			break
+		}
+
+		if stmt.Increment != nil {
+			_, err := inter.evaluate(stmt.Increment)
+			if err != nil {
+				break
+			}
+		}
+
+		cond, err = inter.evaluate(stmt.Condition)
+	}
+
+	inter.env = prev
+	return err
+}
 
 func (inter *Interpreter) VisitReturnStmt(stmt *object.ReturnStmt) error {
 	var value object.Object
