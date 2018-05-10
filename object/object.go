@@ -10,5 +10,15 @@ type Object interface {
 }
 
 const (
-	Printer Type = iota
+	Null Type = iota
+	Boolean
+	BuiltIn
+	Class
+	Function
+	Instance
+	List
+	Number
+	Return
+	String
+	Printer
 )
