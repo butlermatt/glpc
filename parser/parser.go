@@ -83,13 +83,14 @@ func (p *Parser) Errors() []ParseError {
 // Parse will parse the tokens provided by the lexer and return a slice of statements that comprise the program.
 func (p *Parser) Parse() []object.Stmt {
 	var stmts []object.Stmt
+	p.resolve.Begin()
 	for p.curTok.Type != lexer.EOF {
 		s := p.declaration()
 		if s != nil {
 			stmts = append(stmts, s)
 		}
 	}
-
+	p.resolve.End()
 	return stmts
 }
 

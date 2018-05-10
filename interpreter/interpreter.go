@@ -197,7 +197,25 @@ func (inter *Interpreter) VisitVarStmt(stmt *object.VarStmt) error {
 	return nil
 }
 
-func (inter *Interpreter) VisitAssignExpr(expr *object.AssignExpr) (object.Object, error) {return nil, nil}
+func (inter *Interpreter) VisitAssignExpr(expr *object.AssignExpr) (object.Object, error) {
+	value, err := inter.evaluate(expr.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	if dist, ok := inter.local[expr]; ok {
+		err = inter.env.AssignAt(dist, expr.Name, value)
+	} else {
+		err = inter.env.Assign(expr.Name, value)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return value, nil
+}
+
 func (inter *Interpreter) VisitBinaryExpr(expr *object.BinaryExpr) (object.Object, error) {return nil, nil}
 func (inter *Interpreter) VisitBooleanExpr(expr *object.BooleanExpr) (object.Object, error) {return nil, nil}
 func (inter *Interpreter) VisitCallExpr(expr *object.CallExpr) (object.Object, error) {return nil, nil}
