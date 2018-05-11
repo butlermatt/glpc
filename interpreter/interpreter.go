@@ -120,6 +120,7 @@ func (inter *Interpreter) VisitClassStmt(stmt *object.ClassStmt) error {
 	}
 
 	inter.env.Assign(stmt.Name, klass)
+	return nil
 }
 
 func (inter *Interpreter) VisitContinueStmt(stmt *object.ContinueStmt) error { return ContinueError }
