@@ -228,10 +228,19 @@ func (inter *Interpreter) VisitBinaryExpr(expr *object.BinaryExpr) (object.Objec
 	}
 
 	switch expr.Operator.Type {
-	case lexer.Greater, lexer.GreaterEq, lexer.Less, lexer.LessEq, lexer.EqualEq, lexer.BangEq:
+	case lexer.Greater, lexer.GreaterEq, lexer.Less, lexer.LessEq:
 		return numberComparisonOperation(expr.Operator, left, right)
 	case lexer.Minus, lexer.Star, lexer.Slash, lexer.TildSlash, lexer.Percent:
 		return numberMathOperation(expr.Operator, left, right)
+	case lexer.EqualEq:
+		return isEqual(expr.Operator, left, right)
+	case lexer.BangEq:
+		b, err := isEqual(expr.Operator, left, right)
+		if err != nil {
+			return nil, err
+		}
+		b.Value = !b.Value
+		return b, nil
 	case lexer.Plus:
 		if left.Type() == object.Number && right.Type() == object.Number {
 			return numberMathOperation(expr.Operator, left, right)
@@ -380,36 +389,181 @@ func floatOperation(oper string, left, right float64) float64 {
 	return 0
 }
 
-func (inter *Interpreter) VisitBooleanExpr(expr *object.BooleanExpr) (object.Object, error) {
-	return nil, nil
+func isEqual(oper *lexer.Token, left, right object.Object) (*Boolean, error) {
+	if left.Type() == object.Null && right.Type() == object.Null {
+		return &Boolean{Value: true}, nil
+	}
+
+	if left.Type() != right.Type() {
+		return &Boolean{Value: false}, nil
+	}
+
+	switch left.Type() {
+	case object.Number:
+		return numberComparisonOperation(oper, left, right)
+	case object.Boolean:
+		l := left.(*Boolean)
+		r := right.(*Boolean)
+		return &Boolean{Value: l.Value == r.Value}, nil
+	case object.String:
+		l := left.(*String)
+		r := right.(*String)
+		return &Boolean{Value: l.Value == r.Value}, nil
+	}
+
+	// Shouldn't ever reach here
+	return nil, object.NewRuntimeError(oper, fmt.Sprintf("No known operations for %s %s %s", left.Type(), oper.Lexeme, right.Type()))
 }
+
+func (inter *Interpreter) VisitBooleanExpr(expr *object.BooleanExpr) (object.Object, error) {
+	return &Boolean{Value: expr.Value}, nil
+}
+
 func (inter *Interpreter) VisitCallExpr(expr *object.CallExpr) (object.Object, error) { return nil, nil }
-func (inter *Interpreter) VisitGetExpr(expr *object.GetExpr) (object.Object, error)   { return nil, nil }
-func (inter *Interpreter) VisitGroupingExpr(expr *object.GroupingExpr) (object.Object, error) {
+
+func (inter *Interpreter) VisitGetExpr(expr *object.GetExpr) (object.Object, error)   {
 	return nil, nil
+	//obj, err := inter.evaluate(expr.Object)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//if obj.Type() != object.Instance {
+	//	return nil, object.NewRuntimeError(expr.Name, "Only instances have properties.")
+	//}
+	//
+	//inst := obj.(*Instance)
+	//return inst.Get(expr.Name)
+}
+
+func (inter *Interpreter) VisitGroupingExpr(expr *object.GroupingExpr) (object.Object, error) {
+	return inter.evaluate(expr.Expression)
 }
 func (inter *Interpreter) VisitIndexExpr(expr *object.IndexExpr) (object.Object, error) {
-	return nil, nil
+	left, err := inter.evaluate(expr.Left)
+	if err != nil {
+		return nil, err
+	}
+	right, err := inter.evaluate(expr.Right)
+	if err != nil {
+		return nil, err
+	}
+
+	if left.Type() != object.List {
+		return nil, object.NewRuntimeError(expr.Operator, "Cannot perform index lookup on anything except a list.")
+	}
+
+	if right.Type() != object.Number {
+		return nil, object.NewRuntimeError(expr.Operator, "Index operand must be a number.")
+	}
+
+	l := left.(*List)
+	r := right.(*Number)
+	var ind int
+	if r.IsInt {
+		ind = r.Int
+	} else {
+		ind = int(r.Float)
+	}
+
+	if ind >= len(l.Elements) {
+		return nil, object.NewRuntimeError(expr.Operator, "Index out of range.")
+	}
+	return l.Elements[ind], nil
+
 }
-func (inter *Interpreter) VisitListExpr(expr *object.ListExpr) (object.Object, error) { return nil, nil }
+
+func (inter *Interpreter) VisitListExpr(expr *object.ListExpr) (object.Object, error) {
+	listLen := len(expr.Values)
+	list := &List{Elements: make([]object.Object, listLen)}
+
+	for _, e := range expr.Values {
+		value, err := inter.evaluate(e)
+		if err != nil {
+			return nil, err
+		}
+		list.Elements = append(list.Elements, value)
+	}
+
+	return list, nil
+}
+
 func (inter *Interpreter) VisitLogicalExpr(expr *object.LogicalExpr) (object.Object, error) {
-	return nil, nil
+	left, err := inter.evaluate(expr.Left)
+	if err != nil {
+		return nil, err
+	}
+	if expr.Operator.Type == lexer.Or {
+		if isTruthy(left) {
+			return left, nil
+		}
+	} else {
+		if !isTruthy(left) {
+			return left, nil
+		}
+	}
+
+	return inter.evaluate(expr.Right)
 }
+
 func (inter *Interpreter) VisitNumberExpr(expr *object.NumberExpr) (object.Object, error) {
-	return nil, nil
+	n := &Number{}
+	if expr.Token.Type == lexer.NumberI {
+		n.IsInt = true
+		n.Int = expr.Int
+	} else {
+		n.Float = expr.Float
+	}
+
+	return n, nil
 }
-func (inter *Interpreter) VisitNullExpr(expr *object.NullExpr) (object.Object, error) { return nil, nil }
+
+func (inter *Interpreter) VisitNullExpr(expr *object.NullExpr) (object.Object, error) { return &Null{}, nil }
+
 func (inter *Interpreter) VisitSetExpr(expr *object.SetExpr) (object.Object, error)   { return nil, nil }
+
 func (inter *Interpreter) VisitStringExpr(expr *object.StringExpr) (object.Object, error) {
-	return nil, nil
+	return &String{Value: expr.Value}, nil
 }
 func (inter *Interpreter) VisitSuperExpr(expr *object.SuperExpr) (object.Object, error) {
 	return nil, nil
 }
 func (inter *Interpreter) VisitThisExpr(expr *object.ThisExpr) (object.Object, error) { return nil, nil }
+
 func (inter *Interpreter) VisitUnaryExpr(expr *object.UnaryExpr) (object.Object, error) {
+	right, err := inter.evaluate(expr.Right)
+	if err != nil {
+		return nil, err
+	}
+
+	switch expr.Operator.Type {
+	case lexer.Minus:
+		if right.Type() != object.Number {
+			return nil, object.NewRuntimeError(expr.Operator, "Operand must be a number.")
+		}
+		r := right.(*Number)
+		if r.IsInt {
+			r.Int = -r.Int
+		} else {
+			r.Float = -r.Float
+		}
+		return r, nil
+	case lexer.Bang:
+		b := !isTruthy(right)
+		return &Boolean{Value: b}, nil
+	}
+
+	// should never reach here.
 	return nil, nil
 }
+
 func (inter *Interpreter) VisitVariableExpr(expr *object.VariableExpr) (object.Object, error) {
-	return nil, nil
+	return inter.lookupVariable(expr.Name, expr)
+}
+
+func (inter *Interpreter) lookupVariable(name *lexer.Token, expr object.Expr) (object.Object, error) {
+	if dist, ok := inter.local[expr]; ok {
+		return inter.env.GetAt(dist, name)
+	}
+	return inter.globals.Get(name)
 }
