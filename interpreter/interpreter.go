@@ -34,6 +34,7 @@ type Interpreter struct {
 func New(statements []object.Stmt, depthMap map[object.Expr]int, file string) *Interpreter {
 	env := object.NewEnvironment(file)
 	glob := object.GetGlobal()
+	glob = SetupGlobal(glob)
 	return &Interpreter{file: file, stmts: statements, local: depthMap, env: env, globals: glob}
 }
 

@@ -12,7 +12,6 @@ func GetGlobal() *Environment {
 	}
 
 	env := NewEnvironment(__GlobalEnv__)
-	// TODO: Populate builtin functions.
 	return env
 }
 

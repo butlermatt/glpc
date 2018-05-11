@@ -2,8 +2,6 @@ package interpreter
 
 import "github.com/butlermatt/glpc/object"
 
-type CallFn func(interpreter *Interpreter, args []object.Object) (object.Object, error)
-
 type Callable interface {
 	// Arity is the number of expected arguments
 	Arity() int
