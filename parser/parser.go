@@ -336,7 +336,6 @@ func (p *Parser) statement() object.Stmt {
 		return p.returnStatement()
 	case p.match(lexer.While):
 		return p.whileStatement()
-		// TODO: Cases for break, continue, If, Print, Return, While, For, and LBrace
 	}
 
 	return p.expressionStatement()
