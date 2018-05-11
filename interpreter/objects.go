@@ -65,13 +65,6 @@ func (n *Number) String() string {
 	return fmt.Sprintf("%.2f", n.Float)
 }
 
-type Return struct {
-	Value object.Object
-}
-
-func (r *Return) Type() object.Type { return object.Return }
-func (r *Return) String() string    { return r.Value.String() }
-
 type String struct {
 	Value string
 }

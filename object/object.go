@@ -27,6 +27,32 @@ const (
 	Printer
 )
 
+func (t Type) String() string {
+	switch t {
+	case Null:
+		return "NULL"
+	case Boolean:
+		return "BOOLEAN"
+	case BuiltIn:
+		return "FN"
+	case Class:
+		return "CLASS"
+	case Function:
+		return "FN"
+	case Instance:
+		return "INSTANCE"
+	case List:
+		return "LIST"
+	case Number:
+		return "NUMBER"
+	case String:
+		return "STRING"
+	case Printer:
+		return "PRINTER"
+	}
+	return ""
+}
+
 type RuntimeError struct {
 	Token   *lexer.Token
 	Message string
