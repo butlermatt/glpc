@@ -40,6 +40,14 @@ func (e *Environment) Define(name *lexer.Token, value Object) error {
 	return nil
 }
 
+func (e *Environment) DefineString(name string, value Object) {
+	e.m[name] = value
+}
+
+func (e *Environment) GetString(name string) Object {
+	return e.m[name]
+}
+
 func (e *Environment) Get(name *lexer.Token) (Object, error) {
 	v, ok := e.m[name.Lexeme]
 	if ok {
