@@ -88,8 +88,40 @@ func (inter *Interpreter) VisitBlockStmt(stmt *object.BlockStmt) error {
 	return inter.executeBlock(stmt.Statements, object.NewEnclosedEnvironment(inter.env))
 }
 
-func (inter *Interpreter) VisitBreakStmt(stmt *object.BreakStmt) error       { return BreakError }
-func (inter *Interpreter) VisitClassStmt(stmt *object.ClassStmt) error       { return nil }
+func (inter *Interpreter) VisitBreakStmt(stmt *object.BreakStmt) error { return BreakError }
+
+func (inter *Interpreter) VisitClassStmt(stmt *object.ClassStmt) error {
+	inter.env.Define(stmt.Name, nil)
+
+	var superClass *Class
+	var prevEnv *object.Environment
+	if stmt.Super != nil {
+		sc, err := inter.evaluate(stmt.Super)
+		if err != nil {
+			return err
+		}
+		if sc.Type() != object.Class {
+			return object.NewRuntimeError(stmt.Super.Name, "Superclass must be a class.")
+		}
+		superClass = sc.(*Class)
+		prevEnv = inter.env
+		inter.env = object.NewEnclosedEnvironment(inter.env)
+		inter.env.DefineString("super", superClass)
+	}
+
+	var methods = make(map[string]*Function)
+	for _, meth := range stmt.Methods {
+		methods[meth.Name.Lexeme] = NewFunction(meth, inter.env, meth.Name.Lexeme == "init")
+	}
+
+	klass := &Class{Name: stmt.Name.Lexeme, superclass: superClass, methods: methods}
+	if prevEnv != nil {
+		inter.env = prevEnv
+	}
+
+	inter.env.Assign(stmt.Name, klass)
+}
+
 func (inter *Interpreter) VisitContinueStmt(stmt *object.ContinueStmt) error { return ContinueError }
 
 func (inter *Interpreter) VisitExpressionStmt(stmt *object.ExpressionStmt) error {
@@ -97,7 +129,11 @@ func (inter *Interpreter) VisitExpressionStmt(stmt *object.ExpressionStmt) error
 	return err
 }
 
-func (inter *Interpreter) VisitFunctionStmt(stmt *object.FunctionStmt) error { return nil }
+func (inter *Interpreter) VisitFunctionStmt(stmt *object.FunctionStmt) error {
+	fun := NewFunction(stmt, inter.env, false)
+	inter.env.Define(stmt.Name, fun)
+	return nil
+}
 
 func (inter *Interpreter) VisitIfStmt(stmt *object.IfStmt) error {
 	cond, err := inter.evaluate(stmt.Condition)
@@ -430,26 +466,51 @@ func (inter *Interpreter) VisitBooleanExpr(expr *object.BooleanExpr) (object.Obj
 	return False, nil
 }
 
-func (inter *Interpreter) VisitCallExpr(expr *object.CallExpr) (object.Object, error) { return nil, nil }
+func (inter *Interpreter) VisitCallExpr(expr *object.CallExpr) (object.Object, error) {
+	callee, err := inter.evaluate(expr.Callee)
+	if err != nil {
+		return nil, err
+	}
+
+	if callee.Type() != object.Function && callee.Type() != object.Class {
+		return nil, object.NewRuntimeError(expr.Paren, "Can only call functions and classes.")
+	}
+
+	var args []object.Object
+	for _, arg := range expr.Args {
+		a, err := inter.evaluate(arg)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, a)
+	}
+
+	function := callee.(Callable)
+	if len(args) != function.Arity() {
+		return nil, object.NewRuntimeError(expr.Paren, fmt.Sprintf("Expected %d arguments but got %d", function.Arity(), len(args)))
+	}
+
+	return function.Call(inter, args)
+}
 
 func (inter *Interpreter) VisitGetExpr(expr *object.GetExpr) (object.Object, error) {
-	return nil, nil
-	//obj, err := inter.evaluate(expr.Object)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//if obj.Type() != object.Instance {
-	//	return nil, object.NewRuntimeError(expr.Name, "Only instances have properties.")
-	//}
-	//
-	//inst := obj.(*Instance)
-	//return inst.Get(expr.Name)
+	obj, err := inter.evaluate(expr.Object)
+	if err != nil {
+		return nil, err
+	}
+
+	if obj.Type() != object.Instance {
+		return nil, object.NewRuntimeError(expr.Name, "Only instances have properties.")
+	}
+
+	inst := obj.(*Instance)
+	return inst.Get(expr.Name)
 }
 
 func (inter *Interpreter) VisitGroupingExpr(expr *object.GroupingExpr) (object.Object, error) {
 	return inter.evaluate(expr.Expression)
 }
+
 func (inter *Interpreter) VisitIndexExpr(expr *object.IndexExpr) (object.Object, error) {
 	left, err := inter.evaluate(expr.Left)
 	if err != nil {
@@ -533,15 +594,107 @@ func (inter *Interpreter) VisitNullExpr(expr *object.NullExpr) (object.Object, e
 	return NullOb, nil
 }
 
-func (inter *Interpreter) VisitSetExpr(expr *object.SetExpr) (object.Object, error) { return nil, nil }
+func (inter *Interpreter) VisitSetExpr(expr *object.SetExpr) (object.Object, error) {
+	if expr.IsIndex {
+		return inter.setIndexValue(expr)
+	}
+
+	obj, err := inter.evaluate(expr.Object)
+	if err != nil {
+		return nil, err
+	}
+
+	if obj.Type() != object.Instance {
+		return nil, object.NewRuntimeError(expr.Name, "Only instances have fields.")
+	}
+
+	inst := obj.(*Instance)
+	value, err := inter.evaluate(expr.Value)
+	if err != nil {
+		return nil, err
+	}
+	inst.Set(expr.Name, value)
+	return value, nil
+}
+
+func (inter *Interpreter) setIndexValue(expr *object.SetExpr) (object.Object, error) {
+	ie := expr.Object.(*object.IndexExpr)
+	li, err := inter.evaluate(ie.Left)
+	if err != nil {
+		return nil, err
+	}
+	if li.Type() != object.List {
+		return nil, object.NewRuntimeError(ie.Operator, "Cannot perform index lookup on anything except a list.")
+	}
+	list := li.(*List)
+	ind, err := inter.evaluate(ie.Right)
+	if err != nil {
+		return nil, err
+	}
+	if ind.Type() != object.Number {
+		return nil, object.NewRuntimeError(ie.Operator, "Operand must be a number.")
+	}
+	in := ind.(*Number)
+	var index int
+
+	if in.IsInt {
+		index = in.Int
+	} else {
+		index = int(in.Float)
+	}
+
+	if index >= len(list.Elements) {
+		return nil, object.NewRuntimeError(ie.Operator, "Index out of range.")
+	}
+	value, err := inter.evaluate(expr.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	list.Elements[index] = value
+	return value, nil
+}
 
 func (inter *Interpreter) VisitStringExpr(expr *object.StringExpr) (object.Object, error) {
 	return &String{Value: expr.Value}, nil
 }
+
 func (inter *Interpreter) VisitSuperExpr(expr *object.SuperExpr) (object.Object, error) {
-	return nil, nil
+	var superClass *Class
+	var obj *Instance
+
+	dist := inter.local[expr]
+	sc, err := inter.env.GetAt(dist, expr.Keyword)
+	if err != nil {
+		return nil, err
+	}
+
+	if sc != object.Class {
+		return nil, object.NewRuntimeError(expr.Keyword, "Superclass was not a Class.")
+	}
+
+	superClass = sc.(*Class)
+	thisTok := lexer.NewToken(lexer.This, "this", expr.Keyword.Filename, expr.Keyword.Line)
+	o, err := inter.env.GetAt(dist-1, thisTok)
+	if err != nil {
+		return nil, err
+	}
+
+	if o.Type() != object.Instance {
+		return nil, object.NewRuntimeError(expr.Keyword, "this was not an Instance of a class.")
+	}
+	obj = o.(*Instance)
+
+	method := superClass.findMethod(obj, expr.Method.Lexeme)
+	if method == nil {
+		return nil, object.NewRuntimeError(expr.Method, "Undefined property on "+superClass.Name+".")
+	}
+	return method, nil
 }
-func (inter *Interpreter) VisitThisExpr(expr *object.ThisExpr) (object.Object, error) { return nil, nil }
+
+func (inter *Interpreter) VisitThisExpr(expr *object.ThisExpr) (object.Object, error) {
+	return inter.lookupVariable(expr.Keyword, expr)
+}
 
 func (inter *Interpreter) VisitUnaryExpr(expr *object.UnaryExpr) (object.Object, error) {
 	right, err := inter.evaluate(expr.Right)

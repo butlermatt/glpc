@@ -549,7 +549,7 @@ func (p *Parser) assignment() object.Expr {
 		case *object.GetExpr:
 			return &object.SetExpr{Object: e.Object, Name: e.Name, Value: value}
 		case *object.IndexExpr:
-			return &object.SetExpr{Object: e, Name: nil, Value: value}
+			return &object.SetExpr{Object: e, Name: nil, Value: value, IsIndex: true}
 		}
 
 		p.addError(equals, "Invalid assignment target.")
@@ -587,7 +587,7 @@ func (p *Parser) assignment() object.Expr {
 		case *object.GetExpr:
 			return &object.SetExpr{Object: e.Object, Name: e.Name, Value: be}
 		case *object.IndexExpr:
-			return &object.SetExpr{Object: e, Name: nil, Value: be}
+			return &object.SetExpr{Object: e, Name: nil, Value: be, IsIndex: true}
 		}
 	}
 

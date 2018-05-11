@@ -118,9 +118,10 @@ func (n *NullExpr) Accept(visitor ExprVisitor) (Object, error) { return visitor.
 
 // SetExpr is a Expr of a Set
 type SetExpr struct {
-	Object Expr
-	Name   *lexer.Token
-	Value  Expr
+	Object  Expr
+	Name    *lexer.Token
+	Value   Expr
+	IsIndex bool
 }
 
 // Accept calls the correct visit method on ExprVisitor, passing a reference to itself as a value

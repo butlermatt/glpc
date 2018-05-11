@@ -26,7 +26,7 @@ func main() {
 		"Logical  : Left Expr, Operator *lexer.Token, Right Expr",
 		"Number   : Token *lexer.Token, Float float64, Int int",
 		"Null     : Token *lexer.Token, Value interface{}",
-		"Set      : Object Expr, Name *lexer.Token, Value Expr",
+		"Set      : Object Expr, Name *lexer.Token, Value Expr, IsIndex bool",
 		"String   : Token *lexer.Token, Value string",
 		"Super    : Keyword *lexer.Token, Method *lexer.Token",
 		"This     : Keyword *lexer.Token",

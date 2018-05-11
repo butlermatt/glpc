@@ -47,3 +47,9 @@ func (f *Function) Call(interpreter *Interpreter, args []object.Object) (object.
 
 	return NullOb, nil
 }
+
+func (f *Function) Bind(inst *Instance) *Function {
+	env := object.NewEnclosedEnvironment(f.closure)
+	env.DefineString("this", inst)
+	return NewFunction(f.declaration, env, f.isInit)
+}
