@@ -71,3 +71,9 @@ type String struct {
 
 func (s *String) Type() object.Type { return object.String }
 func (s *String) String() string    { return s.Value }
+
+var (
+	NullOb = &Null{}
+	True   = &Boolean{Value: true}
+	False  = &Boolean{Value: false}
+)

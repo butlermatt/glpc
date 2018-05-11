@@ -78,7 +78,7 @@ func isTruthy(obj object.Object) bool {
 	}
 
 	if obj.Type() == object.Boolean {
-		return obj.(*Boolean).Value
+		return obj == True
 	}
 
 	return true
@@ -274,7 +274,11 @@ func numberComparisonOperation(oper *lexer.Token, left, right object.Object) (*B
 		value = floatComparison(oper.Lexeme, l.Float, r.Float)
 	}
 
-	return &Boolean{Value: value}, nil
+	if value {
+		return True, nil
+	}
+
+	return False, nil
 }
 
 func intComparison(oper string, left, right int) bool {
@@ -391,24 +395,28 @@ func floatOperation(oper string, left, right float64) float64 {
 
 func isEqual(oper *lexer.Token, left, right object.Object) (*Boolean, error) {
 	if left.Type() == object.Null && right.Type() == object.Null {
-		return &Boolean{Value: true}, nil
+		return True, nil
 	}
 
 	if left.Type() != right.Type() {
-		return &Boolean{Value: false}, nil
+		return False, nil
 	}
 
 	switch left.Type() {
 	case object.Number:
 		return numberComparisonOperation(oper, left, right)
 	case object.Boolean:
-		l := left.(*Boolean)
-		r := right.(*Boolean)
-		return &Boolean{Value: l.Value == r.Value}, nil
+		if left == right {
+			return True, nil
+		}
+		return False, nil
 	case object.String:
 		l := left.(*String)
 		r := right.(*String)
-		return &Boolean{Value: l.Value == r.Value}, nil
+		if l.Value == r.Value {
+			return True, nil
+		}
+		return False, nil
 	}
 
 	// Shouldn't ever reach here
@@ -416,12 +424,15 @@ func isEqual(oper *lexer.Token, left, right object.Object) (*Boolean, error) {
 }
 
 func (inter *Interpreter) VisitBooleanExpr(expr *object.BooleanExpr) (object.Object, error) {
-	return &Boolean{Value: expr.Value}, nil
+	if expr.Value {
+		return True, nil
+	}
+	return False, nil
 }
 
 func (inter *Interpreter) VisitCallExpr(expr *object.CallExpr) (object.Object, error) { return nil, nil }
 
-func (inter *Interpreter) VisitGetExpr(expr *object.GetExpr) (object.Object, error)   {
+func (inter *Interpreter) VisitGetExpr(expr *object.GetExpr) (object.Object, error) {
 	return nil, nil
 	//obj, err := inter.evaluate(expr.Object)
 	//if err != nil {
@@ -518,9 +529,11 @@ func (inter *Interpreter) VisitNumberExpr(expr *object.NumberExpr) (object.Objec
 	return n, nil
 }
 
-func (inter *Interpreter) VisitNullExpr(expr *object.NullExpr) (object.Object, error) { return &Null{}, nil }
+func (inter *Interpreter) VisitNullExpr(expr *object.NullExpr) (object.Object, error) {
+	return NullOb, nil
+}
 
-func (inter *Interpreter) VisitSetExpr(expr *object.SetExpr) (object.Object, error)   { return nil, nil }
+func (inter *Interpreter) VisitSetExpr(expr *object.SetExpr) (object.Object, error) { return nil, nil }
 
 func (inter *Interpreter) VisitStringExpr(expr *object.StringExpr) (object.Object, error) {
 	return &String{Value: expr.Value}, nil
@@ -550,7 +563,10 @@ func (inter *Interpreter) VisitUnaryExpr(expr *object.UnaryExpr) (object.Object,
 		return r, nil
 	case lexer.Bang:
 		b := !isTruthy(right)
-		return &Boolean{Value: b}, nil
+		if b {
+			return True, nil
+		}
+		return False, nil
 	}
 
 	// should never reach here.
