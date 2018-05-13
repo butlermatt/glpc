@@ -1,6 +1,9 @@
 package interpreter
 
-import "github.com/butlermatt/glpc/object"
+import (
+	"fmt"
+	"github.com/butlermatt/glpc/object"
+)
 
 type CallFn func(interpreter *Interpreter, args []object.Object) (object.Object, error)
 
@@ -33,6 +36,7 @@ func SetupGlobal(env *object.Environment) *object.Environment {
 	}
 
 	env.DefineString("len", newBuiltin(1, bLen))
+	env.DefineString("debugPrint", newBuiltin(-1, bDebugPrint))
 
 	return env
 }
@@ -44,8 +48,24 @@ func bLen(interp *Interpreter, args []object.Object) (object.Object, error) {
 		return &Number{IsInt: true, Int: len(s.Value)}, nil
 	case object.List:
 		l := obj.(*List)
+		fmt.Printf("%+v\n", l.Elements)
 		return &Number{IsInt: true, Int: len(l.Elements)}, nil
 	}
 
 	return NullOb, BIError("'len' argument must be of a type STRING or LIST.")
+}
+
+// TODO Remove this when I get something better
+func bDebugPrint(inter *Interpreter, args []object.Object) (object.Object, error) {
+	if len(args) < 1 {
+		fmt.Println("")
+		return NullOb, nil
+	}
+
+	fmt.Printf("%s", args[0].String())
+	for i := 1; i < len(args); i++ {
+		fmt.Printf(" %s", args[i].String())
+	}
+	fmt.Println("")
+	return NullOb, nil
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/butlermatt/glpc/lexer"
 	"github.com/butlermatt/glpc/object"
+	"github.com/butlermatt/glpc/parser"
 )
 
 var BreakError = errors.New("unexpected 'break' outside of loop")
@@ -29,20 +30,43 @@ type Interpreter struct {
 	globals *object.Environment
 }
 
-func New(statements []object.Stmt, depthMap map[object.Expr]int, file string) *Interpreter {
-	env := object.NewEnvironment(file)
+func New() *Interpreter {
 	glob := object.GetGlobal()
 	glob = SetupGlobal(glob)
-	return &Interpreter{file: file, stmts: statements, local: depthMap, env: env, globals: glob}
+	return &Interpreter{globals: glob}
 }
 
-func (inter *Interpreter) Interpret() error {
-	for _, stmt := range inter.stmts {
+func (inter *Interpreter) Interpret(parser *parser.Parser, filename string) error {
+	// TODO. I need to track statements, depthmap and environment by file.
+	stmts, depth := parser.Parse()
+	errs := parser.Errors()
+	if len(errs) > 0 {
+		for _, err := range errs {
+			fmt.Printf("[Syntax error] %+v\n", err)
+		}
+		return fmt.Errorf("%d syntax errors found.", len(errs))
+	}
+
+	inter.local = depth
+	inter.env = object.NewEnvironment(filename)
+	for _, stmt := range stmts {
 		err := inter.execute(stmt)
 		if err != nil {
 			return err
 		}
 	}
+
+	mnFn := inter.env.GetString("main")
+	if mnFn == nil {
+		return fmt.Errorf("Unable to locate main function.")
+	}
+
+	if mnFn.Type() != object.Function {
+		return fmt.Errorf("Found main, but it was not a function.")
+	}
+
+	mainFunc := mnFn.(*Function)
+	mainFunc.Call(inter, nil)
 
 	return nil
 }
