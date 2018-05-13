@@ -24,8 +24,6 @@ func NewReturnValue(keyword *lexer.Token, value object.Object) *ReturnError {
 }
 
 type Interpreter struct {
-	file    string
-	stmts   []object.Stmt
 	local   map[object.Expr]int
 	env     *object.Environment
 	globals *object.Environment
@@ -474,7 +472,7 @@ func (inter *Interpreter) VisitCallExpr(expr *object.CallExpr) (object.Object, e
 		return nil, err
 	}
 
-	if callee.Type() != object.Function && callee.Type() != object.Class {
+	if callee.Type() != object.Function && callee.Type() != object.Class && callee.Type() != object.BuiltIn {
 		return nil, object.NewRuntimeError(expr.Paren, "Can only call functions and classes.")
 	}
 
@@ -488,6 +486,12 @@ func (inter *Interpreter) VisitCallExpr(expr *object.CallExpr) (object.Object, e
 	}
 
 	function := callee.(Callable)
+
+	// Allow any number of args.
+	if function.Arity() == -1 {
+		return function.Call(inter, args)
+	}
+
 	if len(args) != function.Arity() {
 		return nil, object.NewRuntimeError(expr.Paren, fmt.Sprintf("Expected %d arguments but got %d", function.Arity(), len(args)))
 	}
@@ -551,12 +555,12 @@ func (inter *Interpreter) VisitListExpr(expr *object.ListExpr) (object.Object, e
 	listLen := len(expr.Values)
 	list := &List{Elements: make([]object.Object, listLen)}
 
-	for _, e := range expr.Values {
-		value, err := inter.evaluate(e)
+	for i := 0; i < listLen; i++ {
+		value, err := inter.evaluate(expr.Values[i])
 		if err != nil {
 			return nil, err
 		}
-		list.Elements = append(list.Elements, value)
+		list.Elements[i] = value
 	}
 
 	return list, nil
@@ -671,7 +675,7 @@ func (inter *Interpreter) VisitSuperExpr(expr *object.SuperExpr) (object.Object,
 		return nil, err
 	}
 
-	if sc != object.Class {
+	if sc.Type() != object.Class {
 		return nil, object.NewRuntimeError(expr.Keyword, "Superclass was not a Class.")
 	}
 
