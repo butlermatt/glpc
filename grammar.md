@@ -9,8 +9,7 @@ program        → declaration* EOF ;
 ```glpc
 declaration    → classDecl
                | fnDecl
-               | varDecl
-               | statement ;
+               | varDecl ;
 
 classDecl      → "class" IDENTIFIER ( ":" IDENTIFIER )?
                  "{" function* "}" ;
@@ -18,18 +17,27 @@ fnDecl         → "fn" function ;
 varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 ```
 
+### Utility Rules
+
+```glpc
+function       → IDENTIFIER "(" parameters? ")" block ;
+parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
+arguments      → expression ( "," expression )* ;
+```
+
 ### Statements
 
 ```glpc
-statement      → exprStmt
+statement      → block
                | doWhileStmt
                | forStmt
                | ifStmt
                | printStmt
                | returnStmt
                | whileStmt
-               | block ;
+               | exprStmt ;
 
+block          → "{" ( declaration | statement )* "}" ;
 exprStmt       → expression ";" ;
 doWhileStmt    → "do" statement "while" "(" expression ")" ";" ;
 forStmt        → "for" "(" ( varDecl | exprStmt )
@@ -38,7 +46,6 @@ ifStmt         → "if" "(" expression ")" statement ( "else" statement )? ;
 printStmt      → "print" expression ";" ;
 returnStmt     → "return" expression? ";" ;
 whileStmt      → "while" "(" expression ")" statement ;
-block          → "{" declaration* "}" ;
 ```
 
 ### Expressions
@@ -63,14 +70,6 @@ call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 primary        → "true" | "false" | "null" | "this"
                | NUMBER | STRING | IDENTIFIER | "(" expression ")"
                | "super" "." IDENTIFIER ;
-```
-
-### Utility Rules
-
-```glpc
-function       → IDENTIFIER "(" parameters? ")" block ;
-parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
-arguments      → expression ( "," expression )* ;
 ```
 
 ## Lexical Grammar
