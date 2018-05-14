@@ -85,7 +85,7 @@ func (inter *Interpreter) executeBlock(stmts []object.Stmt, env *object.Environm
 
 	var err error
 	for _, stmt := range stmts {
-		err := inter.execute(stmt)
+		err = inter.execute(stmt)
 		if err != nil {
 			break
 		}
