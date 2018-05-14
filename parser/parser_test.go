@@ -276,6 +276,40 @@ else
 	}
 }
 
+func TestImportStatement(t *testing.T) {
+	tests := []struct {
+		input string
+		file  string
+	}{
+		{`import "testtwo.gpc";`, "testtwo.gpc"},
+		{"import 'test.gpc';", "test.gpc"},
+		{"import `test.gpc`;", "test.gpc"},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New([]byte(tt.input), "testfile.gpc")
+		p := New(l)
+
+		stmts, _ := p.Parse()
+		checkParseErrors(t, p)
+
+		if len(stmts) != 1 {
+			t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
+		}
+
+		im, ok := stmts[0].(*object.ImportStmt)
+		if !ok {
+			t.Fatalf("statement wrong type. expected=*object.ImportStmt, got=%T", stmts[0])
+		}
+
+		if im.Keyword.Lexeme != "import" {
+			t.Errorf("unexpected keyword. expected=%q, got=%q", "import", im.Keyword.Lexeme)
+		}
+
+		testStringLiteral(t, im.Other, tt.file)
+	}
+}
+
 func TestFunctions(t *testing.T) {
 	input := `fn test(x, y) { var temp = x; x = y; y = temp; }`
 
@@ -1031,6 +1065,9 @@ func TestParserErrors(t *testing.T) {
 		{"fn test() { super. = true; }", 3, "=", "Expect superclass method name."},
 		{"fn test() { super.x = true; }", 3, "super", "Cannot use 'super' outside of a class."},
 		{"fn x() { var i = i + 1; }", 1, "i", "Cannot read local variable in its own initializer."},
+		{`import "test.gpc"`, 1, "at end", "Expect ';' after import statement."},
+		{"import test.gpc", 2, "test", "Expect string after import keyword."},
+		{"var x = 7; import `test.gpc`;", 1, "import", "Import statements must appear at the beginning of a file."},
 	}
 
 	for i, tt := range tests {

@@ -75,6 +75,7 @@ const (
 	Fn       TokenType = "FN"
 	For      TokenType = "FOR"
 	If       TokenType = "IF"
+	Import   TokenType = "IMPORT"
 	Null     TokenType = "NULL"
 	Or       TokenType = "OR"
 	Print    TokenType = "PRINT"
@@ -100,6 +101,7 @@ var keywords = map[string]TokenType{
 	"fn":       Fn,
 	"for":      For,
 	"if":       If,
+	"import":   Import,
 	"null":     Null,
 	"or":       Or,
 	"print":    Print,
