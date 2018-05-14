@@ -8,7 +8,8 @@ import (
 )
 
 func TestBlockStatement(t *testing.T) {
-	input := `{
+	input := `fn test() {
+{
   var x = 1;
   x += 1;
   if (x == 2) {
@@ -18,6 +19,7 @@ func TestBlockStatement(t *testing.T) {
     error = "Oh oh";
     error += "broken";
   }
+}
 }`
 
 	l := lexer.New([]byte(input), "testfile.gpc")
@@ -29,7 +31,12 @@ func TestBlockStatement(t *testing.T) {
 		t.Fatalf("unexpected number of program statements. expected=%d, got=%d", 1, len(stmts))
 	}
 
-	bs, ok := stmts[0].(*object.BlockStmt)
+	fn := stmts[0].(*object.FunctionStmt)
+	if len(fn.Body) != 1 {
+		t.Fatalf("unexpected number of program statements. expected=%d, got=%d", 1, len(fn.Body))
+	}
+
+	bs, ok := fn.Body[0].(*object.BlockStmt)
 	if !ok {
 		t.Fatalf("unexpected statement type. expected=*object.BlockStmt, got=%T", stmts[0])
 	}
@@ -64,9 +71,9 @@ func TestBlockStatement(t *testing.T) {
 
 func TestBreakStatement(t *testing.T) {
 	tests := []string{
-		`for (var i = 0; i < 10; i += 1) { break; }`,
-		`while (true) { break; }`,
-		`do { break; } while(true);`,
+		`fn test() { for (var i = 0; i < 10; i += 1) { break; }}`,
+		`fn test() { while (true) { break; } }`,
+		`fn test() { do { break; } while(true); }`,
 	}
 
 	for _, tt := range tests {
@@ -79,7 +86,13 @@ func TestBreakStatement(t *testing.T) {
 			t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
 		}
 
-		s, ok := stmts[0].(*object.ForStmt)
+		fn := stmts[0].(*object.FunctionStmt)
+
+		if len(fn.Body) != 1 {
+			t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
+		}
+
+		s, ok := fn.Body[0].(*object.ForStmt)
 		if !ok {
 			t.Fatalf("Statement wrong type. expected=*object.ForStmt, got=%T", stmts[0])
 		}
@@ -104,7 +117,7 @@ func TestBreakStatement(t *testing.T) {
 }
 
 func TestCallExpression(t *testing.T) {
-	input := `add(1, 2 * 3, 4 + 5);`
+	input := `fn test() { add(1, 2 * 3, 4 + 5); }`
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
@@ -115,7 +128,13 @@ func TestCallExpression(t *testing.T) {
 		t.Fatalf("wrong number of statements. expected=%d, got=%d", 1, len(stmts))
 	}
 
-	st, ok := stmts[0].(*object.ExpressionStmt)
+	fn := stmts[0].(*object.FunctionStmt)
+
+	if len(fn.Body) != 1 {
+		t.Fatalf("wrong number of statements. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	st, ok := fn.Body[0].(*object.ExpressionStmt)
 	if !ok {
 		t.Fatalf("statement is wrong type. expected=*object.ExpressionStmt, got=%T", stmts[0])
 	}
@@ -175,7 +194,7 @@ func TestClassStatement(t *testing.T) {
 }
 
 func TestContinueStatement(t *testing.T) {
-	input := `while (true) continue;`
+	input := `fn test() { while (true) continue; }`
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
 	stmts, _ := p.Parse()
@@ -185,7 +204,13 @@ func TestContinueStatement(t *testing.T) {
 		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
 	}
 
-	s, ok := stmts[0].(*object.ForStmt)
+	fn := stmts[0].(*object.FunctionStmt)
+
+	if len(fn.Body) != 1 {
+		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	s, ok := fn.Body[0].(*object.ForStmt)
 	if !ok {
 		t.Fatalf("Statement wrong type. expected=*object.ForStmt, got=%T", stmts[0])
 	}
@@ -201,11 +226,11 @@ func TestContinueStatement(t *testing.T) {
 }
 
 func TestIfStatement(t *testing.T) {
-	input := `if (a == 1) 
+	input := `fn test () { if (a == 1) 
   x = true;
 else
   y = false;
-`
+}`
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
@@ -216,7 +241,13 @@ else
 		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
 	}
 
-	ifStmt, ok := stmts[0].(*object.IfStmt)
+	fn := stmts[0].(*object.FunctionStmt)
+
+	if len(fn.Body) != 1 {
+		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	ifStmt, ok := fn.Body[0].(*object.IfStmt)
 	if !ok {
 		t.Fatalf("Statement wrong type. expected=*object.IfStmt, got=%T", stmts[0])
 	}
@@ -320,9 +351,10 @@ func TestFunctions(t *testing.T) {
 }
 
 func TestForStatement(t *testing.T) {
-	input := `for (var i = 0; i < 10; i += 1) {
-  error += "Hello";
-  Another = good;
+	input := `fn test() { for (var i = 0; i < 10; i += 1) {
+    error += "Hello";
+    Another = good;
+  }
 }`
 
 	l := lexer.New([]byte(input), "testfile.gpc")
@@ -334,7 +366,13 @@ func TestForStatement(t *testing.T) {
 		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
 	}
 
-	fs, ok := stmts[0].(*object.ForStmt)
+	fn := stmts[0].(*object.FunctionStmt)
+
+	if len(fn.Body) != 1 {
+		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	fs, ok := fn.Body[0].(*object.ForStmt)
 	if !ok {
 		t.Fatalf("statement wrong type. expected=*object.ForStmt, got=%T", stmts[0])
 	}
@@ -374,10 +412,10 @@ func TestForStatement(t *testing.T) {
 }
 
 func TestDoWhileStatement(t *testing.T) {
-	input := `do {
+	input := `fn test() { do {
   error += "Hello";
   Another = good;
-} while(i < 10);`
+} while(i < 10); }`
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
@@ -388,7 +426,13 @@ func TestDoWhileStatement(t *testing.T) {
 		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
 	}
 
-	fs, ok := stmts[0].(*object.ForStmt)
+	fn := stmts[0].(*object.FunctionStmt)
+
+	if len(fn.Body) != 1 {
+		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	fs, ok := fn.Body[0].(*object.ForStmt)
 	if !ok {
 		t.Fatalf("statement wrong type. expected=*object.ForStmt, got=%T", stmts[0])
 	}
@@ -418,9 +462,10 @@ func TestDoWhileStatement(t *testing.T) {
 }
 
 func TestWhileStatement(t *testing.T) {
-	input := `while(i < 10) {
-  error += "Hello";
-  Another = good;
+	input := `fn test() { while(i < 10) {
+    error += "Hello";
+    Another = good;
+  }
 }`
 
 	l := lexer.New([]byte(input), "testfile.gpc")
@@ -432,7 +477,13 @@ func TestWhileStatement(t *testing.T) {
 		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
 	}
 
-	fs, ok := stmts[0].(*object.ForStmt)
+	fn := stmts[0].(*object.FunctionStmt)
+
+	if len(fn.Body) != 1 {
+		t.Fatalf("incorrect number of statements. expected=%d, got=%d", 1, len(stmts))
+	}
+
+	fs, ok := fn.Body[0].(*object.ForStmt)
 	if !ok {
 		t.Fatalf("statement wrong type. expected=*object.ForStmt, got=%T", stmts[0])
 	}
@@ -545,10 +596,10 @@ func TestAssignExpression(t *testing.T) {
 		name  string
 		value interface{}
 	}{
-		{"x = 5;", "x", 5},
-		{"y = 2.25;", "y", 2.25},
-		{"test = true;", "test", true},
-		{"list = [1, 2, 3];", "list", []int{1, 2, 3}},
+		{"fn test() { x = 5; }", "x", 5},
+		{"fn test() { y = 2.25; }", "y", 2.25},
+		{"fn test() { test = true; }", "test", true},
+		{"fn test() { list = [1, 2, 3]; }", "list", []int{1, 2, 3}},
 	}
 
 	for i, tt := range tests {
@@ -561,7 +612,13 @@ func TestAssignExpression(t *testing.T) {
 			t.Fatalf("test %d: incorrect number of statements. expected=%d, got=%d", i, 1, len(stmts))
 		}
 
-		s := stmts[0].(*object.ExpressionStmt)
+		fn := stmts[0].(*object.FunctionStmt)
+
+		if len(fn.Body) != 1 {
+			t.Fatalf("test %d: incorrect number of statements. expected=%d, got=%d", i, 1, len(stmts))
+		}
+
+		s := fn.Body[0].(*object.ExpressionStmt)
 		ae, ok := s.Expression.(*object.AssignExpr)
 		if !ok {
 			t.Fatalf("test %d: expression is wrong type. expected=*object.AssignExpr, got=%T", i, s.Expression)
@@ -589,12 +646,12 @@ func TestCompoundAssignExpressions(t *testing.T) {
 		name  string
 		value bin
 	}{
-		{"x += 1;", "x", bin{"x", "+", 1}},
-		{"y -= 2.2;", "y", bin{"y", "-", 2.2}},
-		{"test *= 3;", "test", bin{"test", "*", 3}},
-		{"z /= 4;", "z", bin{"z", "/", 4}},
-		{"a ~/= 5;", "a", bin{"a", "~/", 5}},
-		{"b %= 6;", "b", bin{"b", "%", 6}},
+		{"fn test() { x += 1; }", "x", bin{"x", "+", 1}},
+		{"fn test() { y -= 2.2; }", "y", bin{"y", "-", 2.2}},
+		{"fn test() { test *= 3; }", "test", bin{"test", "*", 3}},
+		{"fn test() { z /= 4; }", "z", bin{"z", "/", 4}},
+		{"fn test() { a ~/= 5; }", "a", bin{"a", "~/", 5}},
+		{"fn test() { b %= 6; }", "b", bin{"b", "%", 6}},
 	}
 
 	for i, tt := range tests {
@@ -608,7 +665,14 @@ func TestCompoundAssignExpressions(t *testing.T) {
 			continue
 		}
 
-		s, ok := stmts[0].(*object.ExpressionStmt)
+		fn := stmts[0].(*object.FunctionStmt)
+
+		if len(fn.Body) != 1 {
+			t.Errorf("test %d: incorrect statements length. expected=%d, got=%d", i+1, 1, len(stmts))
+			continue
+		}
+
+		s, ok := fn.Body[0].(*object.ExpressionStmt)
 		if !ok {
 			t.Errorf("test %d: statement incorrect type. expected=*object.ExpressionStmt, got=%T", i+1, stmts[0])
 			continue
@@ -637,19 +701,19 @@ func TestBinaryExpressions(t *testing.T) {
 		oper  string
 		right interface{}
 	}{
-		{"5 + 4;", 5, "+", 4},
-		{"5 - 4;", 5, "-", 4},
-		{"5 * 4;", 5, "*", 4},
-		{"5 / 4;", 5, "/", 4},
-		{"5 % 4;", 5, "%", 4},
-		{"5 ~/ 4;", 5, "~/", 4},
-		{"5 < 4;", 5, "<", 4},
-		{"5 > 4;", 5, ">", 4},
-		{"5 <= 4;", 5, "<=", 4},
-		{"5.5 == 4.4;", 5.5, "==", 4.4},
-		{"5 != 4;", 5, "!=", 4},
-		{"true == true;", true, "==", true},
-		{"true != false;", true, "!=", false},
+		{"var x = 5 + 4;", 5, "+", 4},
+		{"var x = 5 - 4;", 5, "-", 4},
+		{"var x = 5 * 4;", 5, "*", 4},
+		{"var x = 5 / 4;", 5, "/", 4},
+		{"var x = 5 % 4;", 5, "%", 4},
+		{"var x = 5 ~/ 4;", 5, "~/", 4},
+		{"var x = 5 < 4;", 5, "<", 4},
+		{"var x = 5 > 4;", 5, ">", 4},
+		{"var x = 5 <= 4;", 5, "<=", 4},
+		{"var x = 5.5 == 4.4;", 5.5, "==", 4.4},
+		{"var x = 5 != 4;", 5, "!=", 4},
+		{"var x = true == true;", true, "==", true},
+		{"var x = true != false;", true, "!=", false},
 	}
 
 	for i, tt := range tests {
@@ -663,13 +727,13 @@ func TestBinaryExpressions(t *testing.T) {
 			continue
 		}
 
-		s, ok := stmts[0].(*object.ExpressionStmt)
+		s, ok := stmts[0].(*object.VarStmt)
 		if !ok {
-			t.Errorf("on test %d: Statement wrong type. expected=*object.ExpressionStmt, got=%T", i+1, stmts[0])
+			t.Errorf("on test %d: Statement wrong type. expected=*object.VarStmt, got=%T", i+1, stmts[0])
 			continue
 		}
 
-		testBinaryExpression(t, s.Expression, tt.left, tt.oper, tt.right)
+		testBinaryExpression(t, s.Value, tt.left, tt.oper, tt.right)
 	}
 }
 
@@ -678,8 +742,8 @@ func TestBooleanLiteralExpression(t *testing.T) {
 		input string
 		value bool
 	}{
-		{"true;", true},
-		{"false;", false},
+		{"var x = true;", true},
+		{"var x = false;", false},
 	}
 
 	for i, tt := range tests {
@@ -693,19 +757,19 @@ func TestBooleanLiteralExpression(t *testing.T) {
 			t.Fatalf("test %d: incorrect number of statements. expected=%d, got=%d", i, 1, len(stmts))
 		}
 
-		s, ok := stmts[0].(*object.ExpressionStmt)
+		s, ok := stmts[0].(*object.VarStmt)
 		if !ok {
-			t.Fatalf("test %d: statement wrong type. expected=*object.ExpressionStmt, got=%T", i, stmts[0])
+			t.Fatalf("test %d: statement wrong type. expected=*object.VarStmt, got=%T", i, stmts[0])
 		}
 
-		if !testBooleanLiteral(t, s.Expression, tt.value) {
+		if !testBooleanLiteral(t, s.Value, tt.value) {
 			t.Errorf("last error occurred on test %d", i)
 		}
 	}
 }
 
 func TestGetExpression(t *testing.T) {
-	input := `test.x;`
+	input := `var y = test.x;`
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
 	stmts, _ := p.Parse()
@@ -715,14 +779,14 @@ func TestGetExpression(t *testing.T) {
 		t.Fatalf("wrong number of statements. expected=%d, got=%d", 1, len(stmts))
 	}
 
-	es, ok := stmts[0].(*object.ExpressionStmt)
+	es, ok := stmts[0].(*object.VarStmt)
 	if !ok {
 		t.Fatalf("statement wrong type. expected=*object.ExpressionStmt, got=%T", stmts[0])
 	}
 
-	ge, ok := es.Expression.(*object.GetExpr)
+	ge, ok := es.Value.(*object.GetExpr)
 	if !ok {
-		t.Fatalf("expression wrong type. expected=*object.GetExpr, got=%T", es.Expression)
+		t.Fatalf("expression wrong type. expected=*object.GetExpr, got=%T", es.Value)
 	}
 
 	if ge.Name.Lexeme != "x" {
@@ -740,7 +804,7 @@ func TestGetExpression(t *testing.T) {
 }
 
 func TestGroupingExpression(t *testing.T) {
-	input := "(5);"
+	input := "var x = (5);"
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
@@ -751,11 +815,11 @@ func TestGroupingExpression(t *testing.T) {
 		t.Fatalf("statements incorrect length. expected=%d, got=%d", 1, len(stmts))
 	}
 
-	stmt := stmts[0].(*object.ExpressionStmt)
+	stmt := stmts[0].(*object.VarStmt)
 
-	gr, ok := stmt.Expression.(*object.GroupingExpr)
+	gr, ok := stmt.Value.(*object.GroupingExpr)
 	if !ok {
-		t.Fatalf("expression wrong type. expected=*object.GroupingExpr, got=%T", stmt.Expression)
+		t.Fatalf("expression wrong type. expected=*object.GroupingExpr, got=%T", stmt.Value)
 	}
 
 	testNumberLiteral(t, gr.Expression, 5)
@@ -768,8 +832,8 @@ func TestIndexExpressions(t *testing.T) {
 		left  interface{}
 		right interface{}
 	}{
-		{"a[5];", "a", 5},
-		{"some[thing];", "some", "thing"},
+		{"var x = a[5];", "a", 5},
+		{"var x = some[thing];", "some", "thing"},
 	}
 
 	for i, tt := range tests {
@@ -783,15 +847,15 @@ func TestIndexExpressions(t *testing.T) {
 			continue
 		}
 
-		s, ok := stmts[0].(*object.ExpressionStmt)
+		s, ok := stmts[0].(*object.VarStmt)
 		if !ok {
-			t.Errorf("on test %d: Statement wrong type. expected=*object.ExpressionStmt, got=%T", i+1, stmts[0])
+			t.Errorf("on test %d: Statement wrong type. expected=*object.VarStmt, got=%T", i+1, stmts[0])
 			continue
 		}
 
-		ie, ok := s.Expression.(*object.IndexExpr)
+		ie, ok := s.Value.(*object.IndexExpr)
 		if !ok {
-			t.Errorf("on test %d: Expression wrong type. expected=*object.IndexExpr, got=%T", i+1, s.Expression)
+			t.Errorf("on test %d: Expression wrong type. expected=*object.IndexExpr, got=%T", i+1, s.Value)
 			continue
 		}
 
@@ -801,7 +865,7 @@ func TestIndexExpressions(t *testing.T) {
 }
 
 func TestListExpression(t *testing.T) {
-	input := "[0, 'one', true];"
+	input := "var x = [0, 'one', true];"
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
@@ -812,11 +876,11 @@ func TestListExpression(t *testing.T) {
 		t.Fatalf("statements is incorrect length. expected=%d, got=%d", 1, len(stmts))
 	}
 
-	stmt := stmts[0].(*object.ExpressionStmt)
+	stmt := stmts[0].(*object.VarStmt)
 
-	list, ok := stmt.Expression.(*object.ListExpr)
+	list, ok := stmt.Value.(*object.ListExpr)
 	if !ok {
-		t.Fatalf("expr is wrong type. expected=*object.ListExpr, got=%T", stmt.Expression)
+		t.Fatalf("expr is wrong type. expected=*object.ListExpr, got=%T", stmt.Value)
 	}
 
 	if len(list.Values) != 3 {
@@ -835,8 +899,8 @@ func TestLogicalExpressions(t *testing.T) {
 		oper  string
 		right interface{}
 	}{
-		{"true and true;", true, "and", true},
-		{"true or false;", true, "or", false},
+		{"var x = true and true;", true, "and", true},
+		{"var x = true or false;", true, "or", false},
 	}
 
 	for i, tt := range tests {
@@ -850,13 +914,13 @@ func TestLogicalExpressions(t *testing.T) {
 			continue
 		}
 
-		s, ok := stmts[0].(*object.ExpressionStmt)
+		s, ok := stmts[0].(*object.VarStmt)
 		if !ok {
-			t.Errorf("on test %d: Statement wrong type. expected=*object.ExpressionStmt, got=%T", i+1, stmts[0])
+			t.Errorf("on test %d: Statement wrong type. expected=*object.VarStmt, got=%T", i+1, stmts[0])
 			continue
 		}
 
-		testLogicalExpression(t, s.Expression, tt.left, tt.oper, tt.right)
+		testLogicalExpression(t, s.Value, tt.left, tt.oper, tt.right)
 	}
 }
 
@@ -865,9 +929,9 @@ func TestNumberLiteralExpression(t *testing.T) {
 		input string
 		value interface{}
 	}{
-		{"5;", 5},
-		{"10;", 10},
-		{"123.456;", 123.456},
+		{"var x = 5;", 5},
+		{"var x = 10;", 10},
+		{"var x = 123.456;", 123.456},
 	}
 
 	for i, tt := range tests {
@@ -881,19 +945,19 @@ func TestNumberLiteralExpression(t *testing.T) {
 			t.Fatalf("test %d: incorrect number of statements. exepected=%d, got=%d", i, 1, len(stmts))
 		}
 
-		s, ok := stmts[0].(*object.ExpressionStmt)
+		s, ok := stmts[0].(*object.VarStmt)
 		if !ok {
-			t.Fatalf("test %d: statement[0] wrong type. expected=*object.ExpressionStmt, got=%T", i, stmts[0])
+			t.Fatalf("test %d: statement[0] wrong type. expected=*object.VarStmt, got=%T", i, stmts[0])
 		}
 
-		if !testNumberLiteral(t, s.Expression, tt.value) {
+		if !testNumberLiteral(t, s.Value, tt.value) {
 			t.Errorf("last test tha failed was %d", i)
 		}
 	}
 }
 
 func TestNullLiteralExpression(t *testing.T) {
-	input := "null;"
+	input := "var x = null;"
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
@@ -905,12 +969,12 @@ func TestNullLiteralExpression(t *testing.T) {
 		t.Fatalf("incorrect number of statements. exepected=%d, got=%d", 1, len(stmts))
 	}
 
-	s, ok := stmts[0].(*object.ExpressionStmt)
+	s, ok := stmts[0].(*object.VarStmt)
 	if !ok {
 		t.Fatalf("statement[0] wrong type. expected=*object.ExpressionStmt, got=%T", stmts[0])
 	}
 
-	testNullLiteral(t, s.Expression)
+	testNullLiteral(t, s.Value)
 }
 
 func TestParserErrors(t *testing.T) {
@@ -920,52 +984,52 @@ func TestParserErrors(t *testing.T) {
 		where   string
 		msg     string
 	}{
-		{`"hello world;`, 2, `"hello world;`, "Unterminated string."},
-		{"7 = x;", 1, "=", "Invalid assignment target."},
-		{"(-x;", 2, ";", "Expect ')' after expression."},
-		{"[1, 2, 3", 2, "at end", "Expect ']' after list values."},
+		{`fn test() { "hello world; }`, 3, `"hello world; }`, "Unterminated string."},
+		{"fn test() { 7 = x; }", 2, "=", "Invalid assignment target."},
+		{"fn test() { (-x; }", 3, ";", "Expect ')' after expression."},
+		{"fn test() { [1, 2, 3 }", 3, "}", "Expect ']' after list values."},
 		{"var ;", 1, ";", "Expect variable name."},
 		{"var x", 1, "at end", "Expect ';' after variable declaration."},
-		{"x = true", 1, "at end", "Expect ';' after value."},
-		{"x[2", 2, "at end", "Expect ']' after index."},
-		{"if y x = 7;", 1, "y", "Expect '(' after 'if'."},
-		{"{ x = 2;", 1, "at end", "Expect '}' after block."}, //10
+		{"fn test() { x = true }", 2, "}", "Expect ';' after value."},
+		{"fn test() { x[2 }", 3, "}", "Expect ']' after index."},
+		{"fn test() { if y x = 7; }", 1, "y", "Expect '(' after 'if'."},
+		{"fn test() { x = 2;", 1, "at end", "Expect '}' after block."}, //10
 
-		{"for x = 2;", 1, "x", "Expect '(' after 'for'."},
-		{"for (;)", 2, ")", "Expect expression."},
-		{"for (; x < 2)", 1, ")", "Expect ';' after loop condition."},
-		{"for (; x < 2;", 2, "at end", "Expect expression."},
-		{"for (; x < 2; x += 2 {}", 1, "{", "Expect ')' after for clauses."},
-		{"while true { }", 1, "true", "Expect '(' after 'while'."},
-		{"while (true { }", 1, "{", "Expect ')' after while condition."},
-		{"do {} ;", 1, ";", "Expect 'while' after do-while body."},
-		{"do {} while;", 1, ";", "Expect '(' after 'while'."},
-		{"do {} while(x == 2;", 1, ";", "Expect ')' after while condition."}, //20
+		{"fn test() { for x = 2; }", 1, "x", "Expect '(' after 'for'."},
+		{"fn test() { for (;) }", 3, ")", "Expect expression."},
+		{"fn test() { for (; x < 2) }", 2, ")", "Expect ';' after loop condition."},
+		{"fn test() { for (; x < 2; }", 3, "}", "Expect expression."},
+		{"fn test() { for (; x < 2; x += 2 {} }", 2, "{", "Expect ')' after for clauses."},
+		{"fn test() { while true { } }", 2, "true", "Expect '(' after 'while'."},
+		{"fn test() { while (true { } }", 2, "{", "Expect ')' after while condition."},
+		{"fn test() { do {} ; }", 1, ";", "Expect 'while' after do-while body."},
+		{"fn test() { do {} while; }", 1, ";", "Expect '(' after 'while'."},
+		{"fn test() { do {} while(x == 2; }", 1, ";", "Expect ')' after while condition."}, //20
 
-		{"do {} while(x == 2)", 1, "at end", "Expect ';' after ')'."},
-		{"while(true) { break }", 2, "}", "Expect ';' after 'break'."},
-		{"while(true) { continue }", 2, "}", "Expect ';' after 'continue'."},
-		{"if (i == 5) { break; }", 2, "break", "Cannot use 'break' outside of a loop."},
-		{"if (i == 5) { continue; }", 2, "continue", "Cannot use 'continue' outside of a loop."},
+		{"fn test() { do {} while(x == 2) }", 2, "}", "Expect ';' after ')'."},
+		{"fn test() { while(true) { break } }", 3, "}", "Expect ';' after 'break'."},
+		{"fn test() { while(true) { continue } }", 3, "}", "Expect ';' after 'continue'."},
+		{"fn test() { if (i == 5) { break; } }", 3, "break", "Cannot use 'break' outside of a loop."},
+		{"fn test() { if (i == 5) { continue; } }", 3, "continue", "Cannot use 'continue' outside of a loop."},
 		{"fn(x, y) {}", 1, "(", "Expect function name."},
 		{"fn test {}", 1, "{", "Expect '(' after function name."},
 		{"fn test(7){}", 1, "7", "Expect parameter name."},
 		{"fn test(x, ){}", 1, ")", "Expect parameter name."},
 		{"fn test(a, b {}", 1, "{", "Expect ')' after parameters."}, // 30
 
-		{"fn test(a, b) x = 10; }", 3, "x", "Expect '{' before function body."},
+		{"fn test(a, b) x = 10; }", 2, "x", "Expect '{' before function body."},
 		{"fn test() { return 1 }", 2, "}", "Expect ';' after return value."},
 		{"fn test() { return true }", 2, "}", "Expect ';' after return value."},
-		{"return;", 1, "return", "Cannot use 'return' outside of a function."},
+		{"return;", 1, "return", "Only classes, functions and variables may be used in top-level."},
 		{"class { }", 1, "{", "Expect class name."},
 		{"class test : { }", 1, "{", "Expect superclass name."},
 		{"class test }", 1, "}", "Expect '{' before class body."},
 		{"class test {", 1, "at end", "Expect '}' after class body."},
-		{"this.x = true;", 1, "this", "Cannot use 'this' outside of a class."},
-		{"super = true;", 2, "=", "Expect '.' after 'super'."}, // 40
+		{"fn test() { this.x = true; }", 2, "this", "Cannot use 'this' outside of a class."},
+		{"fn test() { super = true; }", 3, "=", "Expect '.' after 'super'."}, // 40
 
-		{"super. = true;", 2, "=", "Expect superclass method name."},
-		{"super.x = true;", 2, "super", "Cannot use 'super' outside of a class."},
+		{"fn test() { super. = true; }", 3, "=", "Expect superclass method name."},
+		{"fn test() { super.x = true; }", 3, "super", "Cannot use 'super' outside of a class."},
 		{"fn x() { var i = i + 1; }", 1, "i", "Cannot read local variable in its own initializer."},
 	}
 
@@ -983,9 +1047,9 @@ func TestStringLiteralExpression(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{`"hello world";`, "hello world"},
-		{`'hello world';`, "hello world"},
-		{"`hello world`;", "hello world"},
+		{`var x = "hello world";`, "hello world"},
+		{`var x = 'hello world';`, "hello world"},
+		{"var x = `hello world`;", "hello world"},
 	}
 
 	for i, tt := range tests {
@@ -998,10 +1062,10 @@ func TestStringLiteralExpression(t *testing.T) {
 			t.Fatalf("test %d: incorrect number of statements. expected=%d, got=%d", i, 1, len(stmts))
 		}
 
-		stmt := stmts[0].(*object.ExpressionStmt)
-		lit, ok := stmt.Expression.(*object.StringExpr)
+		stmt := stmts[0].(*object.VarStmt)
+		lit, ok := stmt.Value.(*object.StringExpr)
 		if !ok {
-			t.Fatalf("test %d: expression wrong type. expeted=*object.StringExpr, got=%T", i, stmt.Expression)
+			t.Fatalf("test %d: expression wrong type. expeted=*object.StringExpr, got=%T", i, stmt.Value)
 		}
 
 		if lit.Value != tt.expected {
@@ -1011,11 +1075,11 @@ func TestStringLiteralExpression(t *testing.T) {
 }
 
 func TestUnaryExpression(t *testing.T) {
-	input := `!true;
-!1;
-!!true;
--10;
--2.25;`
+	input := `var x = !true;
+var x = !1;
+var x = !!true;
+var x = -10;
+var x = -2.25;`
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
@@ -1026,10 +1090,10 @@ func TestUnaryExpression(t *testing.T) {
 		t.Fatalf("stmts is wrong length. expected=5, got=%d", len(stmts))
 	}
 
-	s := stmts[0].(*object.ExpressionStmt)
-	ue, ok := s.Expression.(*object.UnaryExpr)
+	s := stmts[0].(*object.VarStmt)
+	ue, ok := s.Value.(*object.UnaryExpr)
 	if !ok {
-		t.Fatalf("expression wrong type. expected=*object.UnaryExpr, got=%T", s.Expression)
+		t.Fatalf("expression wrong type. expected=*object.UnaryExpr, got=%T", s.Value)
 	}
 
 	if ue.Operator.Type != lexer.Bang {
@@ -1043,10 +1107,10 @@ func TestUnaryExpression(t *testing.T) {
 		t.Errorf("Right value incorrect type. expected=%t, got=%t", true, be.Value)
 	}
 
-	s = stmts[1].(*object.ExpressionStmt)
-	ue, ok = s.Expression.(*object.UnaryExpr)
+	s = stmts[1].(*object.VarStmt)
+	ue, ok = s.Value.(*object.UnaryExpr)
 	if !ok {
-		t.Fatalf("expression wrong type. expected=*object.UnaryExpr, got=%T", s.Expression)
+		t.Fatalf("expression wrong type. expected=*object.UnaryExpr, got=%T", s.Value)
 	}
 
 	if ue.Operator.Type != lexer.Bang {
@@ -1060,10 +1124,10 @@ func TestUnaryExpression(t *testing.T) {
 		t.Errorf("Right value incorrect type. expected=%d, got=%d", 1, ne.Int)
 	}
 
-	s = stmts[2].(*object.ExpressionStmt)
-	ue, ok = s.Expression.(*object.UnaryExpr)
+	s = stmts[2].(*object.VarStmt)
+	ue, ok = s.Value.(*object.UnaryExpr)
 	if !ok {
-		t.Fatalf("expression wrong type. expected=*object.UnaryExpr, got=%T", s.Expression)
+		t.Fatalf("expression wrong type. expected=*object.UnaryExpr, got=%T", s.Value)
 	}
 
 	if ue.Operator.Type != lexer.Bang {
@@ -1085,10 +1149,10 @@ func TestUnaryExpression(t *testing.T) {
 		t.Errorf("Right value incorrect type. expected=%t, got=%t", true, be.Value)
 	}
 
-	s = stmts[3].(*object.ExpressionStmt)
-	ue, ok = s.Expression.(*object.UnaryExpr)
+	s = stmts[3].(*object.VarStmt)
+	ue, ok = s.Value.(*object.UnaryExpr)
 	if !ok {
-		t.Fatalf("expression wrong type. expected=*object.UnaryExpr, got=%T", s.Expression)
+		t.Fatalf("expression wrong type. expected=*object.UnaryExpr, got=%T", s.Value)
 	}
 
 	if ue.Operator.Type != lexer.Minus {
@@ -1102,10 +1166,10 @@ func TestUnaryExpression(t *testing.T) {
 		t.Errorf("Right value incorrect type. expected=%d, got=%d", 10, ne.Int)
 	}
 
-	s = stmts[4].(*object.ExpressionStmt)
-	ue, ok = s.Expression.(*object.UnaryExpr)
+	s = stmts[4].(*object.VarStmt)
+	ue, ok = s.Value.(*object.UnaryExpr)
 	if !ok {
-		t.Fatalf("expression wrong type. expected=*object.UnaryExpr, got=%T", s.Expression)
+		t.Fatalf("expression wrong type. expected=*object.UnaryExpr, got=%T", s.Value)
 	}
 
 	if ue.Operator.Type != lexer.Minus {
@@ -1126,8 +1190,8 @@ func TestVariableExpr(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"x;", "x"},
-		{"hello;", "hello"},
+		{"fn test() { x; }", "x"},
+		{"fn test() { hello; }", "hello"},
 	}
 
 	for i, tt := range tests {
@@ -1141,7 +1205,14 @@ func TestVariableExpr(t *testing.T) {
 			continue
 		}
 
-		es := stmts[0].(*object.ExpressionStmt)
+		fn := stmts[0].(*object.FunctionStmt)
+
+		if len(fn.Body) != 1 {
+			t.Errorf("test %d: wrong number of statements. expected=%d, got=%d", i, 1, len(stmts))
+			continue
+		}
+
+		es := fn.Body[0].(*object.ExpressionStmt)
 		ve, ok := es.Expression.(*object.VariableExpr)
 
 		if !ok {
