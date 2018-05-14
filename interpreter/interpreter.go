@@ -6,6 +6,7 @@ import (
 	"github.com/butlermatt/glpc/lexer"
 	"github.com/butlermatt/glpc/object"
 	"github.com/butlermatt/glpc/parser"
+	"io/ioutil"
 )
 
 var BreakError = errors.New("unexpected 'break' outside of loop")
@@ -36,25 +37,8 @@ func New() *Interpreter {
 	return &Interpreter{globals: glob}
 }
 
-func (inter *Interpreter) Interpret(parser *parser.Parser, filename string) error {
-	// TODO. I need to track statements, depthmap and environment by file.
-	stmts, depth := parser.Parse()
-	errs := parser.Errors()
-	if len(errs) > 0 {
-		for _, err := range errs {
-			fmt.Printf("[Syntax error] %+v\n", err)
-		}
-		return fmt.Errorf("%d syntax errors found.", len(errs))
-	}
-
-	inter.local = depth
-	inter.env = object.NewEnvironment(filename)
-	for _, stmt := range stmts {
-		err := inter.execute(stmt)
-		if err != nil {
-			return err
-		}
-	}
+func (inter *Interpreter) RunMain(env *object.Environment) error {
+	inter.env = env
 
 	mnFn := inter.env.GetString("main")
 	if mnFn == nil {
@@ -66,9 +50,31 @@ func (inter *Interpreter) Interpret(parser *parser.Parser, filename string) erro
 	}
 
 	mainFunc := mnFn.(*Function)
-	mainFunc.Call(inter, nil)
+	_, err := mainFunc.Call(inter, nil)
 
-	return nil
+	return err
+}
+
+func (inter *Interpreter) Interpret(parser *parser.Parser, filename string) (*object.Environment, error) {
+	stmts, depth := parser.Parse()
+	errs := parser.Errors()
+	if len(errs) > 0 {
+		for _, err := range errs {
+			fmt.Printf("[Syntax error] %+v\n", err)
+		}
+		return nil, fmt.Errorf("%d syntax errors found.", len(errs))
+	}
+
+	inter.local = depth
+	inter.env = object.NewEnvironment(filename)
+	for _, stmt := range stmts {
+		err := inter.execute(stmt)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return inter.env, nil
 }
 
 func (inter *Interpreter) execute(stmt object.Stmt) error {
@@ -174,6 +180,37 @@ func (inter *Interpreter) VisitIfStmt(stmt *object.IfStmt) error {
 	}
 
 	return nil
+}
+
+func (inter *Interpreter) VisitImportStmt(stmt *object.ImportStmt) error {
+	str, ok := stmt.Other.(*object.StringExpr)
+	if !ok {
+		return object.NewRuntimeError(stmt.Keyword, "Other filename unexpected type.")
+	}
+
+	if str.Value == "" {
+		return object.NewRuntimeError(stmt.Keyword, "imported filename cannot be empty.")
+	}
+
+	oEnv := object.GetFileEnvironment(str.Value)
+	if oEnv != nil {
+		inter.env.Copy(oEnv)
+		return nil
+	}
+
+	file, err := ioutil.ReadFile(str.Value)
+	if err != nil {
+		return object.NewRuntimeError(stmt.Keyword, "error reading file "+str.Value+". Error: "+err.Error())
+	}
+
+	l := lexer.New(file, str.Value)
+	p := parser.New(l)
+	interpreter := New()
+	oEnv, err = interpreter.Interpret(p, str.Value)
+
+	inter.env.Copy(oEnv)
+
+	return err
 }
 
 func (inter *Interpreter) VisitForStmt(stmt *object.ForStmt) error {
@@ -761,8 +798,12 @@ func (inter *Interpreter) VisitVariableExpr(expr *object.VariableExpr) (object.O
 }
 
 func (inter *Interpreter) lookupVariable(name *lexer.Token, expr object.Expr) (object.Object, error) {
-	if dist, ok := inter.local[expr]; ok {
-		return inter.env.GetAt(dist, name)
+	dist := inter.local[expr]
+	obj, _ := inter.env.GetAt(dist, name)
+
+	if obj != nil {
+		return obj, nil
 	}
+
 	return inter.globals.Get(name)
 }
