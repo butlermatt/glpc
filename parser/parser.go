@@ -148,7 +148,11 @@ func (p *Parser) declaration() object.Stmt {
 	case p.match(lexer.Var):
 		stmt = p.varDeclaration()
 	default:
-		stmt = p.statement()
+		if p.curFn == ftNone {
+			p.addError(p.curTok, "Only classes, functions and variables may be used in top-level.")
+		} else {
+			stmt = p.statement()
+		}
 	}
 
 	if len(p.errors) > p.errLen {

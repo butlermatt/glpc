@@ -134,33 +134,33 @@ func TestASTGrouping(t *testing.T) {
 		input  string
 		expect string
 	}{
-		{"4 + 5;", "(+ 4 5)"},
-		{"4 + 5 + 6;", "(+ (+ 4 5) 6)"},
-		{"-a * b;", "(* (- a) b)"},
-		{"a + b * c;", "(+ a (* b c))"},
-		{"a * b + c;", "(+ (* a b) c)"},
-		{"(a + b) * c;", "(* (group (+ a b)) c)"},
-		{"a + b * c + d / e - f;", "(- (+ (+ a (* b c)) (/ d e)) f)"},
-		{"5 == a;", "(== 5 a)"},
-		{"3 + 4 * 5 == 3 * 1 + 4 * 5;", "(== (+ 3 (* 4 5)) (+ (* 3 1) (* 4 5)))"},
-		{"a += b;", "(= a (+ a b))"},
-		{"true or false;", "(or true false)"},
-		{"a[b + c];", "([] a (+ b c))"},
-		{"a.b;", "(.b a)"},
+		{"var a = 4 + 5;", "(+ 4 5)"},
+		{"var a = 4 + 5 + 6;", "(+ (+ 4 5) 6)"},
+		{"var x = -a * b;", "(* (- a) b)"},
+		{"var x = a + b * c;", "(+ a (* b c))"},
+		{"var x = a * b + c;", "(+ (* a b) c)"},
+		{"var x = (a + b) * c;", "(* (group (+ a b)) c)"},
+		{"var x = a + b * c + d / e - f;", "(- (+ (+ a (* b c)) (/ d e)) f)"},
+		{"var x = 5 == a;", "(== 5 a)"},
+		{"var x = 3 + 4 * 5 == 3 * 1 + 4 * 5;", "(== (+ 3 (* 4 5)) (+ (* 3 1) (* 4 5)))"},
+		{"var x = a += b;", "(= a (+ a b))"},
+		{"var x = true or false;", "(or true false)"},
+		{"var x = a[b + c];", "([] a (+ b c))"},
+		{"var x = a.b;", "(.b a)"},
 	}
 
 	for i, tt := range tests {
 		l := lexer.New([]byte(tt.input), "testfile.gpc")
 		p := New(l)
-		stmts := p.Parse()
+		stmts, _ := p.Parse()
 
 		if len(p.Errors()) != 0 {
 			t.Errorf("test %d Parser encountered errors: %v", i+1, p.Errors())
 			t.Fatalf("Test line was: %s", tt.input)
 		}
 
-		s := stmts[0].(*object.ExpressionStmt)
-		out := printer.Print(s.Expression)
+		s := stmts[0].(*object.VarStmt)
+		out := printer.Print(s.Value)
 
 		if out != tt.expect {
 			t.Errorf("test %d: output incorrect. expected=%q, got=%q", i+1, tt.expect, out)

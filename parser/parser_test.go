@@ -22,7 +22,7 @@ func TestBlockStatement(t *testing.T) {
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
-	stmts := p.Parse()
+	stmts, _ := p.Parse()
 	checkParseErrors(t, p)
 
 	if len(stmts) != 1 {
@@ -72,7 +72,7 @@ func TestBreakStatement(t *testing.T) {
 	for _, tt := range tests {
 		l := lexer.New([]byte(tt), "testfile.gpc")
 		p := New(l)
-		stmts := p.Parse()
+		stmts, _ := p.Parse()
 		checkParseErrors(t, p)
 
 		if len(stmts) != 1 {
@@ -108,7 +108,7 @@ func TestCallExpression(t *testing.T) {
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
-	stmts := p.Parse()
+	stmts, _ := p.Parse()
 	checkParseErrors(t, p)
 
 	if len(stmts) != 1 {
@@ -140,7 +140,7 @@ func TestClassStatement(t *testing.T) {
 	input := `class test : origin { add(x, y) { return x + y; } }`
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
-	stmts := p.Parse()
+	stmts, _ := p.Parse()
 	checkParseErrors(t, p)
 
 	if len(stmts) != 1 {
@@ -178,7 +178,7 @@ func TestContinueStatement(t *testing.T) {
 	input := `while (true) continue;`
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
-	stmts := p.Parse()
+	stmts, _ := p.Parse()
 	checkParseErrors(t, p)
 
 	if len(stmts) != 1 {
@@ -209,7 +209,7 @@ else
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
-	stmts := p.Parse()
+	stmts, _ := p.Parse()
 	checkParseErrors(t, p)
 
 	if len(stmts) != 1 {
@@ -250,7 +250,7 @@ func TestFunctions(t *testing.T) {
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
-	stmts := p.Parse()
+	stmts, _ := p.Parse()
 	checkParseErrors(t, p)
 
 	if len(stmts) != 1 {
@@ -327,7 +327,7 @@ func TestForStatement(t *testing.T) {
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
-	stmts := p.Parse()
+	stmts, _ := p.Parse()
 	checkParseErrors(t, p)
 
 	if len(stmts) != 1 {
@@ -381,7 +381,7 @@ func TestDoWhileStatement(t *testing.T) {
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
-	stmts := p.Parse()
+	stmts, _ := p.Parse()
 	checkParseErrors(t, p)
 
 	if len(stmts) != 1 {
@@ -425,7 +425,7 @@ func TestWhileStatement(t *testing.T) {
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
-	stmts := p.Parse()
+	stmts, _ := p.Parse()
 	checkParseErrors(t, p)
 
 	if len(stmts) != 1 {
@@ -476,7 +476,7 @@ func TestReturnStatement(t *testing.T) {
 	for i, tt := range tests {
 		l := lexer.New([]byte(tt.input), "testfile.gcp")
 		p := New(l)
-		stmts := p.Parse()
+		stmts, _ := p.Parse()
 		checkParseErrors(t, p)
 
 		fn, ok := stmts[0].(*object.FunctionStmt)
@@ -519,7 +519,7 @@ func TestVarStatement(t *testing.T) {
 	for i, tt := range tests {
 		l := lexer.New([]byte(tt.input), "testfile.gpc")
 		p := New(l)
-		stmts := p.Parse()
+		stmts, _ := p.Parse()
 		checkParseErrors(t, p)
 
 		if len(stmts) != 1 {
@@ -554,7 +554,7 @@ func TestAssignExpression(t *testing.T) {
 	for i, tt := range tests {
 		l := lexer.New([]byte(tt.input), "testfile.gpc")
 		p := New(l)
-		stmts := p.Parse()
+		stmts, _ := p.Parse()
 		checkParseErrors(t, p)
 
 		if len(stmts) != 1 {
@@ -600,7 +600,7 @@ func TestCompoundAssignExpressions(t *testing.T) {
 	for i, tt := range tests {
 		l := lexer.New([]byte(tt.input), "testfile.gpc")
 		p := New(l)
-		stmts := p.Parse()
+		stmts, _ := p.Parse()
 		checkParseErrors(t, p)
 
 		if len(stmts) != 1 {
@@ -655,7 +655,7 @@ func TestBinaryExpressions(t *testing.T) {
 	for i, tt := range tests {
 		l := lexer.New([]byte(tt.input), "testfile.gpc")
 		p := New(l)
-		stmts := p.Parse()
+		stmts, _ := p.Parse()
 		checkParseErrors(t, p)
 
 		if len(stmts) != 1 {
@@ -686,7 +686,7 @@ func TestBooleanLiteralExpression(t *testing.T) {
 		l := lexer.New([]byte(tt.input), "testfile.gpc")
 		p := New(l)
 
-		stmts := p.Parse()
+		stmts, _ := p.Parse()
 		checkParseErrors(t, p)
 
 		if len(stmts) != 1 {
@@ -708,7 +708,7 @@ func TestGetExpression(t *testing.T) {
 	input := `test.x;`
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
-	stmts := p.Parse()
+	stmts, _ := p.Parse()
 	checkParseErrors(t, p)
 
 	if len(stmts) != 1 {
@@ -744,7 +744,7 @@ func TestGroupingExpression(t *testing.T) {
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
-	stmts := p.Parse()
+	stmts, _ := p.Parse()
 	checkParseErrors(t, p)
 
 	if len(stmts) != 1 {
@@ -775,7 +775,7 @@ func TestIndexExpressions(t *testing.T) {
 	for i, tt := range tests {
 		l := lexer.New([]byte(tt.input), "testfile.gpc")
 		p := New(l)
-		stmts := p.Parse()
+		stmts, _ := p.Parse()
 		checkParseErrors(t, p)
 
 		if len(stmts) != 1 {
@@ -805,7 +805,7 @@ func TestListExpression(t *testing.T) {
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
-	stmts := p.Parse()
+	stmts, _ := p.Parse()
 	checkParseErrors(t, p)
 
 	if len(stmts) != 1 {
@@ -842,7 +842,7 @@ func TestLogicalExpressions(t *testing.T) {
 	for i, tt := range tests {
 		l := lexer.New([]byte(tt.input), "testfile.gpc")
 		p := New(l)
-		stmts := p.Parse()
+		stmts, _ := p.Parse()
 		checkParseErrors(t, p)
 
 		if len(stmts) != 1 {
@@ -874,7 +874,7 @@ func TestNumberLiteralExpression(t *testing.T) {
 		l := lexer.New([]byte(tt.input), "testfile.gpc")
 		p := New(l)
 
-		stmts := p.Parse()
+		stmts, _ := p.Parse()
 		checkParseErrors(t, p)
 
 		if len(stmts) != 1 {
@@ -898,7 +898,7 @@ func TestNullLiteralExpression(t *testing.T) {
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
 
-	stmts := p.Parse()
+	stmts, _ := p.Parse()
 	checkParseErrors(t, p)
 
 	if len(stmts) != 1 {
@@ -991,7 +991,7 @@ func TestStringLiteralExpression(t *testing.T) {
 	for i, tt := range tests {
 		l := lexer.New([]byte(tt.input), "testfile.gpc")
 		p := New(l)
-		stmts := p.Parse()
+		stmts, _ := p.Parse()
 		checkParseErrors(t, p)
 
 		if len(stmts) != 1 {
@@ -1019,7 +1019,7 @@ func TestUnaryExpression(t *testing.T) {
 
 	l := lexer.New([]byte(input), "testfile.gpc")
 	p := New(l)
-	stmts := p.Parse()
+	stmts, _ := p.Parse()
 	checkParseErrors(t, p)
 
 	if len(stmts) != 5 {
@@ -1133,7 +1133,7 @@ func TestVariableExpr(t *testing.T) {
 	for i, tt := range tests {
 		l := lexer.New([]byte(tt.input), "testfile.gpc")
 		p := New(l)
-		stmts := p.Parse()
+		stmts, _ := p.Parse()
 		checkParseErrors(t, p)
 
 		if len(stmts) != 1 {
@@ -1352,7 +1352,7 @@ func testVariable(t *testing.T, stmt object.Stmt, ident string) bool {
 }
 
 func testParseErrors(t *testing.T, p *Parser, numErrs int, where, msg string) bool {
-	stmts := p.Parse()
+	stmts, _ := p.Parse()
 
 	if len(stmts) > 1 {
 		t.Errorf("wrong number of statements. expected=0, got=%d", len(stmts))
