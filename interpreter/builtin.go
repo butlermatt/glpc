@@ -48,7 +48,6 @@ func bLen(interp *Interpreter, args []object.Object) (object.Object, error) {
 		return &Number{IsInt: true, Int: len(s.Value)}, nil
 	case object.List:
 		l := obj.(*List)
-		fmt.Printf("%+v\n", l.Elements)
 		return &Number{IsInt: true, Int: len(l.Elements)}, nil
 	}
 
