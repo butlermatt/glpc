@@ -4,7 +4,7 @@ import "github.com/butlermatt/glpc/lexer"
 
 const __GlobalEnv__ = "__global__"
 
-var fileScopes map[string]*Environment = make(map[string]*Environment)
+var fileScopes = make(map[string]*Environment)
 
 func GetGlobal() *Environment {
 	if env, ok := fileScopes[__GlobalEnv__]; ok {
@@ -13,6 +13,10 @@ func GetGlobal() *Environment {
 
 	env := NewEnvironment(__GlobalEnv__)
 	return env
+}
+
+func GetFileEnvironment(filename string) *Environment {
+	return fileScopes[filename]
 }
 
 type Environment struct {
@@ -88,4 +92,10 @@ func (e *Environment) AssignAt(distance int, name *lexer.Token, value Object) er
 	}
 
 	return env.Assign(name, value)
+}
+
+func (e *Environment) Copy(other *Environment) {
+	for lex, obj := range other.m {
+		e.m[lex] = obj
+	}
 }

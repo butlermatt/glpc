@@ -84,6 +84,14 @@ func (p *Parser) Errors() []ParseError {
 func (p *Parser) Parse() ([]object.Stmt, map[object.Expr]int) {
 	var stmts []object.Stmt
 	p.resolve.Begin()
+
+	for p.curTok.Type == lexer.Import {
+		s := p.importStmt()
+		if s != nil {
+			stmts = append(stmts, s)
+		}
+	}
+
 	for p.curTok.Type != lexer.EOF {
 		s := p.declaration()
 		if s != nil {
@@ -137,6 +145,24 @@ func (p *Parser) nextToken() {
 	}
 }
 
+func (p *Parser) importStmt() *object.ImportStmt {
+	p.consume(lexer.Import, "Expected 'import' keyword for import statement.")
+	keyword := p.prevTok
+
+	if !p.match(lexer.String, lexer.RawString) {
+		p.addError(p.curTok, "Expect string after import keyword.")
+		return nil
+	}
+
+	exp := &object.StringExpr{Token: p.prevTok, Value: p.prevTok.Lexeme}
+
+	if !p.consume(lexer.Semicolon, "Expect ';' after import statement.") {
+		return nil
+	}
+
+	return &object.ImportStmt{Keyword: keyword, Other: exp}
+}
+
 func (p *Parser) declaration() object.Stmt {
 	var stmt object.Stmt
 
@@ -147,6 +173,8 @@ func (p *Parser) declaration() object.Stmt {
 		stmt = p.function(ftFunc)
 	case p.match(lexer.Var):
 		stmt = p.varDeclaration()
+	case p.match(lexer.Import):
+		p.addError(p.prevTok, "Import statements must appear at the beginning of a file.")
 	default:
 		if p.curFn == ftNone {
 			p.addError(p.curTok, "Only classes, functions and variables may be used in top-level.")

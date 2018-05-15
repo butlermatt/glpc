@@ -1,7 +1,14 @@
 ## Syntax Grammar
 
 ```glpc
-program        → declaration* EOF ;
+program        → import
+               | declaration* EOF ;
+```
+
+### Imports
+
+```glpc
+import         → STRING ";" ;
 ```
 
 ### Declarations

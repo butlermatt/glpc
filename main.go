@@ -34,10 +34,10 @@ func run(input []byte, filename string) error {
 	l := lexer.New(input, filename)
 	p := parser.New(l)
 	interp := interpreter.New()
-	err := interp.Interpret(p, filename)
+	env, err := interp.Interpret(p, filename)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	return interp.RunMain(env)
 }
