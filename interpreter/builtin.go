@@ -30,15 +30,16 @@ func newBuiltin(arity int, fn CallFn) *BuiltIn {
 	return &BuiltIn{arity: arity, callFn: fn}
 }
 
-func SetupGlobal(env *object.Environment) *object.Environment {
+func SetupBuiltins(fe *object.FileEnvironment) *object.FileEnvironment {
+	env := fe.Env()
 	if env.GetString("len") != nil {
-		return env
+		return fe
 	}
 
 	env.DefineString("len", newBuiltin(1, bLen))
 	env.DefineString("debugPrint", newBuiltin(-1, bDebugPrint))
 
-	return env
+	return fe
 }
 
 func bLen(interp *Interpreter, args []object.Object) (object.Object, error) {

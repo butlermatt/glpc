@@ -27,18 +27,47 @@ func NewReturnValue(keyword *lexer.Token, value object.Object) *ReturnError {
 
 type Interpreter struct {
 	local   map[object.Expr]int
+	fileEnv *object.FileEnvironment
 	env     *object.Environment
-	globals *object.Environment
+	globals *object.FileEnvironment
+	master  *object.FileEnvironment
 }
 
-func New() *Interpreter {
+func New(master string) (*Interpreter, error) {
 	glob := object.GetGlobal()
-	glob = SetupGlobal(glob)
-	return &Interpreter{globals: glob}
+	glob = SetupBuiltins(glob)
+
+	inter := &Interpreter{globals: glob}
+
+	err := inter.loadMaster(master)
+	if err != nil {
+		return nil, err
+	}
+
+	return inter, nil
 }
 
-func (inter *Interpreter) RunMain(env *object.Environment) error {
-	inter.env = env
+func (inter *Interpreter) loadMaster(master string) error {
+	file, err := ioutil.ReadFile(master)
+	if err != nil {
+		return fmt.Errorf("error loading master file %q, error: %+v", master, err)
+	}
+
+	l := lexer.New(file, master)
+	p := parser.New(l)
+
+	fe, err := inter.Interpret(p, master)
+	if err != nil {
+		return err
+	}
+
+	inter.master = fe
+
+	return nil
+}
+
+func (inter *Interpreter) RunMain(fe *object.FileEnvironment) error {
+	inter.env = fe.Env()
 
 	mnFn := inter.env.GetString("main")
 	if mnFn == nil {
@@ -55,7 +84,7 @@ func (inter *Interpreter) RunMain(env *object.Environment) error {
 	return err
 }
 
-func (inter *Interpreter) Interpret(parser *parser.Parser, filename string) (*object.Environment, error) {
+func (inter *Interpreter) Interpret(parser *parser.Parser, filename string) (*object.FileEnvironment, error) {
 	stmts, depth := parser.Parse()
 	errs := parser.Errors()
 	if len(errs) > 0 {
@@ -66,7 +95,8 @@ func (inter *Interpreter) Interpret(parser *parser.Parser, filename string) (*ob
 	}
 
 	inter.local = depth
-	inter.env = object.NewEnvironment(filename)
+	inter.fileEnv = object.NewFileEnvironment(filename)
+	inter.env = inter.fileEnv.Env()
 	for _, stmt := range stmts {
 		err := inter.execute(stmt)
 		if err != nil {
@@ -74,7 +104,7 @@ func (inter *Interpreter) Interpret(parser *parser.Parser, filename string) (*ob
 		}
 	}
 
-	return inter.env, nil
+	return inter.fileEnv, nil
 }
 
 func (inter *Interpreter) execute(stmt object.Stmt) error {
@@ -194,7 +224,7 @@ func (inter *Interpreter) VisitImportStmt(stmt *object.ImportStmt) error {
 
 	oEnv := object.GetFileEnvironment(str.Value)
 	if oEnv != nil {
-		inter.env.Copy(oEnv)
+		inter.env.Copy(oEnv.Env())
 		return nil
 	}
 
@@ -205,10 +235,10 @@ func (inter *Interpreter) VisitImportStmt(stmt *object.ImportStmt) error {
 
 	l := lexer.New(file, str.Value)
 	p := parser.New(l)
-	interpreter := New()
+	interpreter := &Interpreter{globals: inter.globals}
 	oEnv, err = interpreter.Interpret(p, str.Value)
 
-	inter.env.Copy(oEnv)
+	inter.env.Copy(oEnv.Env())
 
 	return err
 }
@@ -805,5 +835,5 @@ func (inter *Interpreter) lookupVariable(name *lexer.Token, expr object.Expr) (o
 		return obj, nil
 	}
 
-	return inter.globals.Get(name)
+	return inter.globals.Env().Get(name)
 }

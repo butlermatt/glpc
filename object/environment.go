@@ -1,22 +1,38 @@
 package object
 
-import "github.com/butlermatt/glpc/lexer"
+import (
+	"github.com/butlermatt/glpc/lexer"
+)
 
 const __GlobalEnv__ = "__global__"
 
-var fileScopes = make(map[string]*Environment)
+var fileScopes = make(map[string]*FileEnvironment)
 
-func GetGlobal() *Environment {
+func GetGlobal() *FileEnvironment {
 	if env, ok := fileScopes[__GlobalEnv__]; ok {
 		return env
 	}
 
-	env := NewEnvironment(__GlobalEnv__)
+	env := NewFileEnvironment(__GlobalEnv__)
 	return env
 }
 
-func GetFileEnvironment(filename string) *Environment {
+func GetFileEnvironment(filename string) *FileEnvironment {
 	return fileScopes[filename]
+}
+
+type FileEnvironment struct {
+	filename string
+	depth    map[Expr]int
+	env      *Environment
+}
+
+func (fe *FileEnvironment) Env() *Environment {
+	return fe.env
+}
+
+func (fe *FileEnvironment) Name() string {
+	return fe.filename
 }
 
 type Environment struct {
@@ -24,10 +40,11 @@ type Environment struct {
 	m      map[string]Object
 }
 
-func NewEnvironment(filename string) *Environment {
+func NewFileEnvironment(filename string) *FileEnvironment {
 	env := &Environment{m: make(map[string]Object)}
-	fileScopes[filename] = env
-	return env
+	fe := &FileEnvironment{filename: filename, env: env}
+	fileScopes[filename] = fe
+	return fe
 }
 
 func NewEnclosedEnvironment(enclosing *Environment) *Environment {
